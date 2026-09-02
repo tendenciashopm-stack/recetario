@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 40 56% 98%;
+        --foreground: 156 17% 11%;
+        --card: 0 0% 100%;
+        --card-foreground: 156 17% 11%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 156 17% 11%;
+        --primary: 147 32% 27%;
+        --primary-foreground: 40 56% 98%;
+        --secondary: 43 37% 92%;
+        --secondary-foreground: 156 17% 11%;
+        --muted: 43 37% 92%;
+        --muted-foreground: 156 8% 40%;
+        --accent: 18 67% 56%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 72% 47%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 38 30% 85%;
+        --input: 38 30% 85%;
+        --ring: 147 32% 27%;
+        --radius: 0.85rem;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-family: 'Outfit', sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, .font-serif {
+        font-family: 'Playfair Display', serif;
+    }
+}
+
+::selection {
+    background: #2E5A44;
+    color: #FDFBF7;
+}
+
+.eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #D96B43;
+}
+
+.grain {
+    background-image: radial-gradient(rgba(46,90,68,0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.6s ease-out both; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

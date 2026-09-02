@@ -1,0 +1,153 @@
+{
+  "app_identity": {
+    "name": "Salud Nutrition",
+    "tagline": "Recetas saludables, nutritivas y diseñadas para tu bienestar",
+    "language": "es",
+    "archetype": "Organic & Earthy meets High-End Modern Culinary",
+    "subscription_model": {
+      "price": "S/15.00",
+      "period": "mensual",
+      "currency": "PEN",
+      "payment_methods": ["Yape", "Plin", "BCP", "BBVA"]
+    }
+  },
+  "typography": {
+    "heading_font": "Playfair Display, Merriweather, serif",
+    "body_font": "Outfit, Manrope, sans-serif",
+    "mono_font": "JetBrains Mono, monospace",
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl font-serif font-bold tracking-tight text-[#1A2421] leading-[1.15]",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl font-serif font-semibold text-[#1A2421] tracking-tight",
+      "h3": "text-xl sm:text-2xl font-sans font-bold text-[#2E5A44]",
+      "h4": "text-lg sm:text-xl font-sans font-semibold text-[#1A2421]",
+      "body": "text-base font-sans leading-relaxed text-[#3A4A43]",
+      "small_accent": "text-xs uppercase tracking-[0.2em] font-mono text-[#D96B43] font-semibold"
+    }
+  },
+  "colors": {
+    "mode": "light_first_with_warm_tones",
+    "palette": {
+      "background_page": "#FDFBF7",
+      "background_card": "#FFFFFF",
+      "background_muted": "#F3EFE6",
+      "primary_green": "#2E5A44",
+      "primary_green_hover": "#224433",
+      "primary_green_light": "#E8F0EC",
+      "terracotta_accent": "#D96B43",
+      "terracotta_light": "#FDF0EB",
+      "warm_gold": "#E5A93C",
+      "text_main": "#1A2421",
+      "text_muted": "#5C6E66",
+      "border_subtle": "#E4DDD0",
+      "border_focus": "#2E5A44",
+      "status_success": "#2D8A56",
+      "status_pending": "#E5A93C",
+      "status_rejected": "#D93838"
+    },
+    "forbidden_colors": ["#7351B7", "#1B93A4"]
+  },
+  "layout_and_spacing": {
+    "spacing_scale": "Tailwind standard (p-4, p-6, p-8, p-12, p-16, p-24)",
+    "container_padding": "px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto",
+    "card_padding": "p-6 sm:p-8 rounded-2xl border border-[#E4DDD0] bg-white shadow-sm hover:shadow-md transition-all duration-300",
+    "hero_overlay_max_opacity": "bg-black/40",
+    "grid_bento": "grid grid-cols-1 md:grid-cols-8 lg:grid-cols-12 gap-6 lg:gap-8"
+  },
+  "navigation": {
+    "type": "Sticky Glassmorphism Header",
+    "style": "sticky top-0 z-50 backdrop-blur-md bg-[#FDFBF7]/85 border-b border-[#E4DDD0]",
+    "elements": [
+      "Brand Logo (Salud Nutrition)",
+      "Nav items: Inicio, Recetas, Categorías, Planes y Suscripción, Admin (si es admin)",
+      "Buscador rápido",
+      "Boton de login/registro o Perfil de usuario",
+      "Indicador de estado de suscripción (Activo / Pendiente)"
+    ]
+  },
+  "key_features_structures": {
+    "recipe_categories": [
+      {"id": "diabeticos", "label": "Para Diabéticos", "badge_color": "bg-amber-100 text-amber-800 border-amber-200", "description": "Bajo índice glucémico y control de carbohidratos"},
+      {"id": "bajar_peso", "label": "Bajar de Peso", "badge_color": "bg-emerald-100 text-emerald-800 border-emerald-200", "description": "Bajas en calorías y altas en fibra y saciedad"},
+      {"id": "comida_saludable", "label": "Comida Saludable", "badge_color": "bg-teal-100 text-teal-800 border-teal-200", "description": "Nutrición balanceada diaria para toda la familia"},
+      {"id": "veganos", "label": "Veganos", "badge_color": "bg-lime-100 text-lime-800 border-lime-200", "description": "100% origen vegetal rico en proteínas vegetales"}
+    ],
+    "recipe_detail_mandatory_sections": [
+      "1. Nombre del Plato e Imagen Destacada",
+      "2. Tiempos y Utensilios (Tiempo Prep, Tiempo Cocción, Dificultad, Utensilios Usados)",
+      "3. Ingredientes (lista interactiva con checkboxes)",
+      "4. Modo de Preparación (Paso a paso numerado con tiempos por paso)",
+      "5. Emplatado / Servido (Instrucciones de presentación final y sugerencias de acompañamiento)",
+      "6. Información Nutricional (Calorías, Proteínas, Carbohidratos, Grasas, Fibra)"
+    ],
+    "subscription_flow": {
+      "price": "S/ 15.00 / mes",
+      "steps": [
+        "1. Registro o Iniciar Sesión",
+        "2. Selección de método de pago peruano (Yape, Plin, BCP, BBVA)",
+        "3. Muestra de código QR y número de cuenta / titular",
+        "4. Carga de comprobante de pago (Imagen JPG/PNG o PDF de transferencia)",
+        "5. Envío y Estado 'Pendiente de Aprobación'",
+        "6. Activación automática o por Admin"
+      ]
+    },
+    "admin_dashboard_features": [
+      "Gestión de Usuarios (Crear cuentas, modificar roles, ver estado de suscripción)",
+      "Aprobación de Comprobantes de Pago (Validar Yape/Plin/BCP/BBVA y activar acceso)",
+      "Creador Manual de Recetas (Título, categoría, tiempos, utensilios, ingredientes, pasos, emplatado)",
+      "Extractor de Recetas PDF con IA (Subir archivo PDF de recetas para extracción automática de datos)",
+      "Gestión y publicación de catálogo de recetas"
+    ]
+  },
+  "image_urls": {
+    "hero_healthy_bowl": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwxfHxoZWFsdGh5JTIwZm9vZCUyMGdvdXJtZXQlMjBzYWxhZCUyMHBsYXRlfGVufDB8fHx8MTc4ODMyOTQzNXww&ixlib=rb-4.1.0&q=85",
+    "recipe_salad_spices": "https://images.unsplash.com/photo-1505576633757-0ac1084af824?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHw0fHxoZWFsdGh5JTIwZm9vZCUyMGdvdXJtZXQlMjBzYWxhZCUyMHBsYXRlfGVufDB8fHx8MTc4ODMyOTQzNXww&ixlib=rb-4.1.0&q=85",
+    "recipe_poached_egg_plate": "https://images.unsplash.com/photo-1490645935967-10de6ba17061?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwyfHxoZWFsdGh5JTIwZm9vZCUyMGdvdXJtZXQlMjBzYWxhZCUyMHBsYXRlfGVufDB8fHx8MTc4ODMyOTQzNXww&ixlib=rb-4.1.0&q=85",
+    "recipe_vegetable_bowl": "https://images.unsplash.com/photo-1494859802809-d069c3b71a8a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwzfHxoZWFsdGh5JTIwZm9vZCUyMGdvdXJtZXQlMjBzYWxhZCUyMHBsYXRlfGVufDB8fHx8MTc4ODMyOTQzNXww&ixlib=rb-4.1.0&q=85",
+    "peruvian_vegan_quinoa_bowl": "https://images.unsplash.com/photo-1567575990843-105a1c70d76e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHwyfHxwZXJ1dmlhbiUyMGN1bGluYXJ5JTIwaGVhbHRoeSUyMGRpc2hlcyUyMHZlZ2FuJTIwYm93bHxlbnwwfHx8fDE3ODgzMjk0MzV8MA&ixlib=rb-4.1.0&q=85",
+    "peruvian_rice_peas": "https://images.unsplash.com/photo-1629793980444-11a91aa44476?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHw0fHxwZXJ1dmlhbiUyMGN1bGluYXJ5JTIwaGVhbHRoeSUyMGRpc2hlcyUyMHZlZ2FuJTIwYm93bHxlbnwwfHx8fDE3ODgzMjk0MzV8MA&ixlib=rb-4.1.0&q=85",
+    "peruvian_veggie_wooden_spoon": "https://images.unsplash.com/photo-1623428187969-5da2dcea5ebf?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHxfHxwZXJ1dmlhbiUyMGN1bGluYXJ5JTIwaGVhbHRoeSUyMGRpc2hlcyUyMHZlZ2FuJTIwYm93bHxlbnwwfHx8fDE3ODgzMjk0MzV8MA&ixlib=rb-4.1.0&q=85",
+    "smoothie_kiwi_almond_bowl": "https://images.pexels.com/photos/13222803/pexels-photo-13222803.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "smoothie_fruit_topview": "https://images.pexels.com/photos/1242512/pexels-photo-1242512.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+  },
+  "iconography": {
+    "library": "lucide-react",
+    "key_icons": {
+      "diabeticos": "Activity / HeartPulse",
+      "bajar_peso": "Scale / Flame",
+      "comida_saludable": "Apple / Leaf",
+      "veganos": "Sprout / Carrot",
+      "tiempo_preparacion": "Clock",
+      "tiempo_coccion": "Timer / Flame",
+      "utensilios": "UtensilsCrossed / ChefHat",
+      "pdf_upload": "FileUp / FileText",
+      "payment_upload": "Upload / CreditCard",
+      "check": "CheckCircle2"
+    }
+  },
+  "micro_interactions": {
+    "button_hover": "hover:scale-[1.02] hover:bg-[#224433] transition-all duration-200 ease-out active:scale-[0.98]",
+    "card_hover": "transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border-hover:border-[#2E5A44]/40",
+    "filter_pill": "transition-colors duration-200 cursor-pointer text-sm px-4 py-2 rounded-full font-medium"
+  },
+  "testing_requirements": {
+    "data_testid_convention": "kebab-case, role-based, explicit on buttons, inputs, filter pills, recipe cards, modals, upload inputs and admin action rows",
+    "examples": [
+      "data-testid=\"nav-brand-logo\"",
+      "data-testid=\"recipe-search-input\"",
+      "data-testid=\"category-filter-diabeticos\"",
+      "data-testid=\"recipe-card-1\"",
+      "data-testid=\"subscribe-cta-button\"",
+      "data-testid=\"payment-proof-file-input\"",
+      "data-testid=\"admin-pdf-upload-button\"",
+      "data-testid=\"admin-approve-payment-btn-101\""
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Ensure all user-facing text is in Spanish as requested ('Salud Nutrition', 'Recetas para diabéticos', 'Bajar de peso', 'Comida saludable', 'Veganos').",
+    "Implement full end-to-end functionality including PDF parser upload mock/backend endpoint, manual payment verification flow with Peru methods (Yape, Plin, BCP, BBVA), and searchable recipe catalog.",
+    "Add sample recipes pre-populated for each of the 4 categories so the user instantly sees content upon landing.",
+    "Strictly follow the color palette `#2E5A44` (botanical green), `#D96B43` (warm terracotta), and background `#FDFBF7` (cream bone white).",
+    "Ensure the Admin section allows adding new recipes manually, uploading PDF documents, creating user accounts, and approving subscriptions.",
+    "Include mandatory data-testid on every interactive element."
+  ]
+}
