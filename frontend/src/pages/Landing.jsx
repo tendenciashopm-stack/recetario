@@ -27,7 +27,7 @@ export default function Landing() {
               Come <span className="text-brand-green">saludable</span>, siéntete <span className="text-brand-terracotta">increíble</span>.
             </h1>
             <p className="text-lg text-brand-muted mt-6 max-w-lg leading-relaxed">
-              Cientos de recetas para diabéticos, control de peso, comida saludable y veganos. Con ingredientes, paso a paso, tiempos y utensilios. Todo por <span className="font-semibold text-brand-ink">S/ 15.00 al mes</span>.
+              Cientos de recetas para diabéticos, control de peso, comida saludable y veganos. Con ingredientes, paso a paso, tiempos y utensilios. Todo en un solo lugar.
             </p>
             <div className="flex flex-wrap gap-3 mt-8">
               <Link to="/register" data-testid="hero-cta-register" className="px-7 py-3.5 rounded-full bg-brand-green text-white font-semibold hover:bg-brand-greenHover transition-all hover:scale-[1.02] flex items-center gap-2">
@@ -48,8 +48,8 @@ export default function Landing() {
               <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200" alt="Plato saludable" className="w-full h-[460px] object-cover" />
             </div>
             <div className="absolute -bottom-5 -left-5 bg-white rounded-2xl shadow-xl p-4 border border-brand-line hidden sm:block">
-              <p className="text-3xl font-serif font-bold text-brand-green">S/ 15<span className="text-base text-brand-muted">/mes</span></p>
-              <p className="text-xs text-brand-muted">Acceso ilimitado</p>
+              <p className="text-2xl font-serif font-bold text-brand-green leading-tight">Recetas<br/>saludables</p>
+              <p className="text-xs text-brand-muted mt-1">Acceso ilimitado</p>
             </div>
           </div>
         </div>
@@ -103,7 +103,7 @@ export default function Landing() {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               { icon: CheckCircle2, t: "1. Crea tu cuenta", d: "Regístrate gratis con tu correo en menos de un minuto." },
-              { icon: FileText, t: "2. Suscríbete por S/ 15", d: "Paga con Yape, Plin, BCP o BBVA y sube tu comprobante." },
+              { icon: FileText, t: "2. Suscríbete", d: "Paga con Yape, Plin, BCP o BBVA y sube tu comprobante." },
               { icon: Search, t: "3. Cocina saludable", d: "Busca recetas y sigue el paso a paso con tiempos y utensilios." },
             ].map((s, i) => (
               <div key={i} className="bg-white rounded-2xl border border-brand-line p-8 text-center">
@@ -121,9 +121,9 @@ export default function Landing() {
         <div className="rounded-[2rem] bg-brand-green text-white p-10 sm:p-16 text-center relative overflow-hidden">
           <div className="absolute inset-0 grain opacity-40" />
           <div className="relative">
-            <p className="eyebrow text-brand-gold">Suscripción mensual</p>
-            <h2 className="font-serif text-4xl sm:text-5xl font-bold mt-3 text-white">Solo S/ 15.00 al mes</h2>
-            <p className="text-brand-cream/80 mt-4 max-w-xl mx-auto">Acceso ilimitado a todas nuestras recetas saludables, actualizadas mes a mes. Cancela cuando quieras.</p>
+            <p className="eyebrow text-brand-gold">Suscripción</p>
+            <h2 className="font-serif text-4xl sm:text-5xl font-bold mt-3 text-white">Recetas saludables ilimitadas</h2>
+            <p className="text-brand-cream/80 mt-4 max-w-xl mx-auto">Accede a todas nuestras recetas saludables, actualizadas mes a mes. Suscríbete y empieza hoy.</p>
             <Link to="/register" data-testid="pricing-cta-register" className="inline-flex items-center gap-2 mt-8 px-8 py-4 rounded-full bg-brand-terracotta text-white font-semibold hover:scale-[1.03] transition-transform">
               Suscribirme ahora <ArrowRight className="w-5 h-5" />
             </Link>

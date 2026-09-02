@@ -37,6 +37,12 @@ App de recetas saludables con cobro mensual (S/15). Recetas para diabéticos, ba
 - Resultado: las 38 recetas tienen fotos de paso a paso completas.
 - Scripts en /app/scripts: import_pdf, attach_images, attach_steps, bruschetta_steps, attach_seed_steps.
 
+## Update (2026-09-02) — Almuerzos + precio único + admin
+- Integradas 50 recetas del PDF "Almuerzos Saludables" (extracción por bloques para evitar truncado), cada una con su foto real del PDF (4 portadas generadas con IA). Sin fotos de paso por defecto (se pueden generar con el botón IA por receta para controlar costo). Total catálogo: 96 recetas.
+- Precio S/15 ahora aparece SOLO en la página de Suscripción (removido de landing, footer, register, panel bloqueado y "cómo funciona").
+- Endpoint create /admin/recipes admite ?auto_generate=false para importaciones masivas sin generar imágenes.
+- Admin: admin@saludnutrition.com / Admin2026! (crear cuentas desde Admin → Usuarios, rol admin o cliente).
+
 ## Backlog / Next
 - P1: Generación automática de imagen para recetas importadas por PDF (nano banana).
 - P1: Vista previa/edición del draft de PDF antes de guardar.

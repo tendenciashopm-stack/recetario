@@ -35,7 +35,7 @@ export default function Register() {
             <span className="font-serif text-xl font-bold">Salud Nutrition</span>
           </div>
           <h1 className="font-serif text-3xl font-bold text-brand-ink">Crear cuenta</h1>
-          <p className="text-brand-muted mt-2 mb-8 text-sm">Únete y accede a recetas saludables por S/ 15.00 al mes.</p>
+          <p className="text-brand-muted mt-2 mb-8 text-sm">Únete y accede a todas nuestras recetas saludables.</p>
 
           <label className="block text-sm font-medium mb-1.5">Nombre completo</label>
           <input data-testid="register-name-input" required value={name} onChange={(e) => setName(e.target.value)}

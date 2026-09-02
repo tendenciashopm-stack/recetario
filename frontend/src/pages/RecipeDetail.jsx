@@ -67,7 +67,7 @@ export default function RecipeDetail() {
           <div className="mt-12 rounded-[2rem] border border-brand-line bg-brand-greenLight p-10 sm:p-14 text-center" data-testid="recipe-locked-panel">
             <span className="w-16 h-16 rounded-2xl bg-brand-green text-white flex items-center justify-center mx-auto"><Lock className="w-8 h-8" /></span>
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-ink mt-6">Receta completa exclusiva para suscriptores</h2>
-            <p className="text-brand-muted mt-3 max-w-lg mx-auto">Suscríbete por solo S/ 15.00 al mes para ver los ingredientes, el modo de preparación paso a paso, el emplatado y la información nutricional.</p>
+            <p className="text-brand-muted mt-3 max-w-lg mx-auto">Suscríbete para ver los ingredientes, el modo de preparación paso a paso, el emplatado y la información nutricional.</p>
             <div className="flex flex-wrap justify-center gap-3 mt-8">
               {user ? (
                 <Link to="/suscripcion" data-testid="recipe-subscribe-cta" className="px-7 py-3.5 rounded-full bg-brand-green text-white font-semibold hover:bg-brand-greenHover transition-all hover:scale-[1.02] flex items-center gap-2">Suscribirme <ArrowRight className="w-4 h-4" /></Link>

@@ -391,7 +391,7 @@ async def upload_image(file: UploadFile = File(...), admin: dict = Depends(requi
 
 # ---------------- Admin: recipes ----------------
 @api_router.post("/admin/recipes")
-async def create_recipe(body: RecipeIn, background: BackgroundTasks, admin: dict = Depends(require_admin)):
+async def create_recipe(body: RecipeIn, background: BackgroundTasks, auto_generate: bool = Query(True), admin: dict = Depends(require_admin)):
     if body.categoria not in CATEGORY_IDS:
         raise HTTPException(status_code=400, detail="Categoría inválida")
     rid = str(uuid.uuid4())
@@ -400,7 +400,7 @@ async def create_recipe(body: RecipeIn, background: BackgroundTasks, admin: dict
     await db.recipes.insert_one(doc)
     doc.pop("_id", None)
     needs = (not doc.get("imagen_url")) or (len(doc.get("pasos_imagenes", []) or []) < len(doc.get("preparacion", []) or []))
-    if needs:
+    if auto_generate and needs:
         background.add_task(fill_missing_images, rid)
     return doc
 

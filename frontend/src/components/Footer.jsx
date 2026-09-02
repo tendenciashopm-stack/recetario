@@ -22,7 +22,7 @@ export function Footer() {
         </div>
         <div>
           <h4 className="text-white font-semibold mb-4 font-sans">Suscripción</h4>
-          <p className="text-sm">Acceso completo por <span className="text-brand-gold font-semibold">S/ 15.00 al mes</span>.</p>
+          <p className="text-sm">Acceso completo a todas nuestras recetas saludables.</p>
           <p className="text-sm mt-2">Pago con Yape, Plin, BCP y BBVA.</p>
         </div>
       </div>
