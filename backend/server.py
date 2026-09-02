@@ -175,6 +175,7 @@ class RecipeIn(BaseModel):
     imagen_url: str = ""
     ingredientes: List[str] = []
     preparacion: List[str] = []
+    pasos_imagenes: List[str] = []
     emplatado: str = ""
     tiempo_preparacion: str = ""
     tiempo_coccion: str = ""

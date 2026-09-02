@@ -114,14 +114,32 @@ export default function RecipeDetail() {
             {/* preparacion */}
             <div className="lg:col-span-2">
               <h2 className="font-serif text-2xl font-bold text-brand-ink">Modo de Preparación</h2>
-              <ol className="mt-6 space-y-5" data-testid="recipe-steps">
+              <ol className="mt-6 space-y-6" data-testid="recipe-steps">
                 {(recipe.preparacion || []).map((step, i) => (
-                  <li key={i} className="flex gap-4">
+                  <li key={i} className="flex gap-4" data-testid={`recipe-step-${i}`}>
                     <span className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-green text-white flex items-center justify-center font-semibold font-mono text-sm">{i + 1}</span>
-                    <p className="text-brand-ink leading-relaxed pt-1">{step}</p>
+                    <div className="flex-1">
+                      <p className="text-brand-ink leading-relaxed pt-1">{step}</p>
+                      {recipe.pasos_imagenes?.[i] && (
+                        <img src={resolveImg(recipe.pasos_imagenes[i])} alt={`Paso ${i + 1}`} loading="lazy"
+                          data-testid={`recipe-step-img-${i}`}
+                          className="mt-3 w-full max-w-sm rounded-2xl border border-brand-line shadow-sm object-cover" />
+                      )}
+                    </div>
                   </li>
                 ))}
               </ol>
+
+              {recipe.pasos_imagenes?.length > (recipe.preparacion?.length || 0) && (
+                <div className="mt-8">
+                  <h3 className="font-sans font-bold text-brand-ink mb-3">Más fotos del proceso</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {recipe.pasos_imagenes.slice(recipe.preparacion?.length || 0).map((img, i) => (
+                      <img key={i} src={resolveImg(img)} alt={`Proceso ${i + 1}`} loading="lazy" className="w-full aspect-square object-cover rounded-xl border border-brand-line" />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {recipe.emplatado && (
                 <div className="mt-10 rounded-2xl bg-brand-greenLight border border-brand-green/20 p-6">

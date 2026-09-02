@@ -20,7 +20,7 @@ App de recetas saludables con cobro mensual (S/15). Recetas para diabéticos, ba
 - Cliente: se registra, paga S/15, sube comprobante, y accede a recetas completas.
 
 ## Implemented (2026-09-02)
-- Auth JWT (register/login/me), admin seeding (admin@saludnutrition.com / Admin2026!).
+- Auth JWT (register/login/me), admin seeding (admin@saludnutrition.com / Admin2026!). (register/login/me), admin seeding (admin@saludnutrition.com / Admin2026!).
 - Catálogo público con buscador (nombre/descripción/ingredientes) y filtros por 4 categorías.
 - Detalle de receta con bloqueo (locked) para no suscriptores; completo para suscriptores/admin.
 - 8 recetas de ejemplo pre-cargadas (2 por categoría) con estructura completa.
@@ -28,6 +28,14 @@ App de recetas saludables con cobro mensual (S/15). Recetas para diabéticos, ba
 - Panel admin: Resumen (stats), Recetas (CRUD manual + extractor PDF con IA), Usuarios (crear/activar/revocar/eliminar), Pagos (aprobar/rechazar), Ajustes de pago.
 - Object storage para imágenes, PDFs y comprobantes.
 - Testing: 23 pruebas backend + flujos Playwright, 100% pass.
+
+## Update (2026-09-02) — Contenido del PDF + Paso a Paso con fotos
+- Importadas 30 recetas del PDF "25 Recetas de Brunch Saludables" vía extractor IA (Gemini), con estructura completa.
+- Fotos de portada reales extraídas del PDF y asignadas a cada receta.
+- Campo `pasos_imagenes` en modelo Recipe; RecipeDetail muestra cada paso con su foto.
+- 29 recetas del PDF con fotos de paso reales extraídas del PDF; Bruschettas (sin grid en PDF) + 8 recetas de ejemplo completadas con fotos de paso generadas por IA (estilo consistente).
+- Resultado: las 38 recetas tienen fotos de paso a paso completas.
+- Scripts en /app/scripts: import_pdf, attach_images, attach_steps, bruschetta_steps, attach_seed_steps.
 
 ## Backlog / Next
 - P1: Generación automática de imagen para recetas importadas por PDF (nano banana).
