@@ -89,6 +89,19 @@ function RecetasTab() {
     load();
   };
 
+  const [genId, setGenId] = useState(null);
+  const genSteps = async (id) => {
+    setGenId(id);
+    toast.info("Generando fotos con IA... puede tardar un momento.");
+    try {
+      await api.post(`/admin/recipes/${id}/generate-steps`, {}, { timeout: 240000 });
+      toast.success("Fotos generadas con IA");
+      load();
+    } catch {
+      toast.error("No se pudieron generar las fotos");
+    } finally { setGenId(null); }
+  };
+
   return (
     <div>
       <div className="flex flex-wrap gap-3 mb-6">
@@ -113,6 +126,7 @@ function RecetasTab() {
                 <td className="px-5 py-3 text-brand-muted hidden md:table-cell">{r.preparacion?.length || 0} pasos</td>
                 <td className="px-5 py-3">
                   <div className="flex justify-end gap-2">
+                    <button onClick={() => genSteps(r.id)} disabled={genId === r.id} data-testid={`admin-genimg-recipe-${r.id}`} title="Generar fotos de pasos con IA" className="p-2 rounded-lg hover:bg-brand-terracottaLight text-brand-terracotta disabled:opacity-50">{genId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}</button>
                     <button onClick={() => { setEditing(r); setShowForm(true); }} data-testid={`admin-edit-recipe-${r.id}`} className="p-2 rounded-lg hover:bg-brand-sand text-brand-green"><Edit className="w-4 h-4" /></button>
                     <button onClick={() => del(r.id)} data-testid={`admin-delete-recipe-${r.id}`} className="p-2 rounded-lg hover:bg-red-50 text-red-600"><Trash2 className="w-4 h-4" /></button>
                   </div>

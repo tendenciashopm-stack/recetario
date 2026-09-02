@@ -6,6 +6,8 @@ load_dotenv(ROOT_DIR / '.env')
 import os
 import uuid
 import json
+import base64
+import asyncio
 import logging
 import tempfile
 from datetime import datetime, timezone, timedelta
@@ -14,7 +16,7 @@ from typing import List, Optional
 import jwt
 import bcrypt
 import requests
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, UploadFile, File, Form, Query, Header, Response
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, UploadFile, File, Form, Query, Header, Response, BackgroundTasks
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response as StarletteResponse
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -81,6 +83,59 @@ def get_object(path: str):
     return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
 
 MIME_TYPES = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "gif": "image/gif", "webp": "image/webp", "pdf": "application/pdf"}
+
+# ---------------- AI image generation ----------------
+async def generate_and_store_image(prompt: str, prefix: str) -> Optional[str]:
+    try:
+        chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=str(uuid.uuid4()),
+                       system_message="Eres un fotógrafo gastronómico profesional. Genera fotos apetitosas, realistas y limpias, sin texto ni marcas de agua.")
+        chat.with_model("gemini", "gemini-3.1-flash-image-preview").with_params(modalities=["image", "text"])
+        _, images = await chat.send_message_multimodal_response(UserMessage(text=prompt))
+        if not images:
+            return None
+        img = images[0]
+        data = base64.b64decode(img["data"])
+        mt = img.get("mime_type", "image/png")
+        ext = "jpeg" if ("jpeg" in mt or "jpg" in mt) else "png"
+        path = f"{APP_NAME}/{prefix}/{uuid.uuid4()}.{ext}"
+        await asyncio.to_thread(put_object, path, data, mt)
+        return path
+    except Exception as e:
+        logger.error(f"gen image failed: {e}")
+        return None
+
+async def fill_missing_images(recipe_id: str):
+    r = await db.recipes.find_one({"id": recipe_id})
+    if not r:
+        return
+    name = r.get("nombre_plato", "")
+    cat = r.get("categoria", "")
+    updates = {}
+    if not r.get("imagen_url"):
+        p = await generate_and_store_image(
+            f"Fotografía gastronómica cenital profesional del plato terminado '{name}' (comida saludable, categoría {cat}). Emplatado apetitoso, luz natural suave, fondo rústico limpio. Sin texto.",
+            "gen-covers")
+        if p:
+            updates["imagen_url"] = p
+    steps = r.get("preparacion", []) or []
+    imgs = list(r.get("pasos_imagenes", []) or [])
+    while len(imgs) < len(steps):
+        imgs.append("")
+    changed = False
+    for i, step in enumerate(steps):
+        if imgs[i]:
+            continue
+        p = await generate_and_store_image(
+            f"Fotografía gastronómica cenital, luz natural, fondo rústico de cocina. Paso de la receta '{name}': {step}. Comida saludable, estilo recetario profesional, realista, sin texto.",
+            "gen-steps")
+        if p:
+            imgs[i] = p
+            changed = True
+    if changed:
+        updates["pasos_imagenes"] = imgs
+    if updates:
+        updates["updated_at"] = now_iso()
+        await db.recipes.update_one({"id": recipe_id}, {"$set": updates})
 
 # ---------------- Auth helpers ----------------
 def hash_password(password: str) -> str:
@@ -336,7 +391,7 @@ async def upload_image(file: UploadFile = File(...), admin: dict = Depends(requi
 
 # ---------------- Admin: recipes ----------------
 @api_router.post("/admin/recipes")
-async def create_recipe(body: RecipeIn, admin: dict = Depends(require_admin)):
+async def create_recipe(body: RecipeIn, background: BackgroundTasks, admin: dict = Depends(require_admin)):
     if body.categoria not in CATEGORY_IDS:
         raise HTTPException(status_code=400, detail="Categoría inválida")
     rid = str(uuid.uuid4())
@@ -344,7 +399,19 @@ async def create_recipe(body: RecipeIn, admin: dict = Depends(require_admin)):
     doc.update({"id": rid, "created_at": now_iso(), "updated_at": now_iso()})
     await db.recipes.insert_one(doc)
     doc.pop("_id", None)
+    needs = (not doc.get("imagen_url")) or (len(doc.get("pasos_imagenes", []) or []) < len(doc.get("preparacion", []) or []))
+    if needs:
+        background.add_task(fill_missing_images, rid)
     return doc
+
+@api_router.post("/admin/recipes/{recipe_id}/generate-steps")
+async def generate_step_images(recipe_id: str, admin: dict = Depends(require_admin)):
+    r = await db.recipes.find_one({"id": recipe_id})
+    if not r:
+        raise HTTPException(status_code=404, detail="Receta no encontrada")
+    await fill_missing_images(recipe_id)
+    updated = await db.recipes.find_one({"id": recipe_id}, {"_id": 0})
+    return updated
 
 @api_router.put("/admin/recipes/{recipe_id}")
 async def update_recipe(recipe_id: str, body: RecipeIn, admin: dict = Depends(require_admin)):

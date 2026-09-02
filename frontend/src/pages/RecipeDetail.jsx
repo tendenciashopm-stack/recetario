@@ -26,21 +26,26 @@ export default function RecipeDetail() {
 
   return (
     <div>
-      {/* header image */}
-      <div className="relative h-[42vh] min-h-[320px] bg-brand-sand">
-        {recipe.imagen_url ? (
-          <img src={resolveImg(recipe.imagen_url)} alt={recipe.nombre_plato} className="w-full h-full object-cover" />
-        ) : <div className="w-full h-full flex items-center justify-center"><UtensilsCrossed className="w-16 h-16 text-brand-muted" /></div>}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 max-w-5xl mx-auto px-4 sm:px-6 lg:px-12 pb-8">
-          <button onClick={() => navigate(-1)} className="text-white/90 text-sm flex items-center gap-1 mb-4 hover:text-white"><ArrowLeft className="w-4 h-4" /> Volver</button>
-          <span className={`text-xs px-3 py-1 rounded-full border font-medium ${meta.cls}`}>{meta.label}</span>
-          <h1 className="font-serif text-3xl sm:text-5xl font-bold text-white mt-3 max-w-3xl leading-tight">{recipe.nombre_plato}</h1>
+      {/* header */}
+      <div className="border-b border-brand-line bg-brand-sand/40">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-10 text-center">
+          <button onClick={() => navigate(-1)} data-testid="recipe-back-btn" className="text-brand-muted text-sm inline-flex items-center gap-1 mb-6 hover:text-brand-ink"><ArrowLeft className="w-4 h-4" /> Volver</button>
+          <div>
+            <span className={`inline-block text-xs px-3 py-1 rounded-full border font-medium ${meta.cls}`}>{meta.label}</span>
+          </div>
+          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-brand-ink mt-4 leading-tight">{recipe.nombre_plato}</h1>
+          {recipe.descripcion && <p className="text-brand-muted leading-relaxed mt-4 max-w-2xl mx-auto">{recipe.descripcion}</p>}
+          <div className="mt-8 flex justify-center">
+            {recipe.imagen_url ? (
+              <img src={resolveImg(recipe.imagen_url)} alt={recipe.nombre_plato} className="w-full max-w-sm aspect-[4/3] object-cover rounded-2xl border border-brand-line shadow-lg" />
+            ) : (
+              <div className="w-full max-w-sm aspect-[4/3] flex items-center justify-center bg-white rounded-2xl border border-brand-line"><UtensilsCrossed className="w-14 h-14 text-brand-muted" /></div>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-12 py-10">
-        <p className="text-lg text-brand-muted leading-relaxed max-w-3xl">{recipe.descripcion}</p>
 
         {/* meta stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
