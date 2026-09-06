@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Leaf, Menu, X, ShieldCheck, Home, UtensilsCrossed, CalendarDays, ShoppingCart, BarChart3, CreditCard } from "lucide-react";
+import { Leaf, Menu, X, ShieldCheck, Home, UtensilsCrossed, CalendarDays, ShoppingCart, BarChart3, CreditCard, Calculator } from "lucide-react";
 import { useState } from "react";
 
 export function Navbar() {
@@ -16,6 +16,7 @@ export function Navbar() {
     links = [
       { to: "/", label: "Inicio", icon: Home },
       { to: "/recetas", label: "Recetas", icon: UtensilsCrossed },
+      { to: "/calculadora", label: "Calculadora", icon: Calculator },
       { to: "/mi-menu", label: "Mi Menú", icon: CalendarDays },
       { to: "/compras", label: "Compras", icon: ShoppingCart },
       { to: "/mi-progreso", label: "Mi Progreso", icon: BarChart3 },

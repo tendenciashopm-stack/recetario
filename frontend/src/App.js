@@ -15,6 +15,7 @@ import Admin from "@/pages/Admin";
 import Menu from "@/pages/Menu";
 import Compras from "@/pages/Compras";
 import Progreso from "@/pages/Progreso";
+import Calculadora from "@/pages/Calculadora";
 
 function Layout({ children }) {
   return (
@@ -39,6 +40,7 @@ function App() {
           <Route path="/register" element={<Layout><Register /></Layout>} />
           <Route path="/suscripcion" element={<Layout><ProtectedRoute><Subscription /></ProtectedRoute></Layout>} />
           <Route path="/mi-menu" element={<Layout><ProtectedRoute requireSub><Menu /></ProtectedRoute></Layout>} />
+          <Route path="/calculadora" element={<Layout><ProtectedRoute requireSub><Calculadora /></ProtectedRoute></Layout>} />
           <Route path="/compras" element={<Layout><ProtectedRoute requireSub><Compras /></ProtectedRoute></Layout>} />
           <Route path="/mi-progreso" element={<Layout><ProtectedRoute requireSub><Progreso /></ProtectedRoute></Layout>} />
           <Route path="/admin" element={<Layout><ProtectedRoute adminOnly><Admin /></ProtectedRoute></Layout>} />
