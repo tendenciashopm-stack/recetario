@@ -22,11 +22,26 @@ export default function Bienestar() {
   const timers = useRef([]);
 
   const loadWater = () => api.get("/water").then((r) => setWater(r.data)).catch(() => {}).finally(() => setLoading(false));
+  const refreshWater = () => api.get("/water").then((r) => setWater(r.data)).catch(() => {});
   useEffect(() => { loadWater(); }, []);
 
-  const add = async (n) => { const { data } = await api.post(`/water/add?n=${n}`); setWater((w) => ({ ...w, vasos: data.vasos })); };
-  const reset = async () => { const { data } = await api.post("/water/reset"); setWater((w) => ({ ...w, vasos: data.vasos })); };
+  const add = async (n) => { await api.post(`/water/add?n=${n}`); refreshWater(); };
+  const reset = async () => { await api.post("/water/reset"); refreshWater(); };
   const saveMeta = (v) => { const n = Math.max(1, Number(v) || 8); setMeta(n); localStorage.setItem("sn_agua_meta", n); };
+  const metaInteligente = () => {
+    const peso = Number(localStorage.getItem("sn_peso") || 0);
+    if (!peso) { toast.info("Primero usa la Calculadora para registrar tu peso"); return; }
+    const glasses = Math.max(4, Math.round((peso * 35) / 250));
+    saveMeta(glasses);
+    toast.success(`Meta ajustada a ${glasses} vasos según tu peso (${peso} kg)`);
+  };
+  const streak = (() => {
+    if (!water?.semana?.length) return 0;
+    const byDate = [...water.semana].sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+    let s = 0;
+    for (const d of byDate) { if (d.vasos >= meta) s++; else break; }
+    return s;
+  })();
 
   // reminders scheduling
   useEffect(() => {
@@ -74,6 +89,7 @@ export default function Bienestar() {
             <h2 className="font-serif text-xl font-bold text-brand-ink flex items-center gap-2"><Droplets className="w-5 h-5 text-sky-500" /> Recordatorio de agua</h2>
             <div className="flex items-center gap-1 text-sm text-brand-muted">Meta:
               <input type="number" min="1" value={meta} onChange={(e) => saveMeta(e.target.value)} className="w-14 ml-1 px-2 py-1 rounded-lg border border-brand-line text-center" data-testid="water-meta" /> vasos
+              <button onClick={metaInteligente} data-testid="water-auto-meta" className="ml-1 text-xs px-2 py-1 rounded-lg bg-sky-100 text-sky-700 font-medium hover:bg-sky-200">Auto</button>
             </div>
           </div>
 
@@ -87,6 +103,13 @@ export default function Bienestar() {
                 <div className="h-full bg-sky-400 transition-all duration-500" style={{ width: `${pct}%` }} data-testid="water-progress" />
               </div>
               {vasos >= meta && <p className="text-center text-sm text-emerald-600 mt-2 font-medium">¡Meta cumplida! 🎉</p>}
+
+              {streak > 0 && (
+                <div className="mt-3 flex items-center justify-center gap-2 bg-amber-50 border border-amber-200 rounded-xl py-2" data-testid="water-streak">
+                  <span className="text-lg">🔥</span>
+                  <span className="text-sm font-semibold text-amber-800">Racha de {streak} {streak === 1 ? "día" : "días"} cumpliendo tu meta</span>
+                </div>
+              )}
 
               <div className="flex items-center justify-center gap-2 mt-5">
                 <button onClick={() => add(-1)} className="w-10 h-10 rounded-full border border-brand-line flex items-center justify-center hover:bg-brand-sand" data-testid="water-minus"><Minus className="w-4 h-4" /></button>

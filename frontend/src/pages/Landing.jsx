@@ -1,12 +1,73 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "@/lib/api";
+import { api, resolveImg } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { RecipeCard } from "@/components/RecipeCard";
-import { Activity, Scale, Apple, Sprout, Search, FileText, CheckCircle2, ArrowRight, Star, Clock, ShieldCheck } from "lucide-react";
+import { Activity, Scale, Apple, Sprout, Search, FileText, CheckCircle2, ArrowRight, Star, Clock, ShieldCheck, Droplets, Flame, CalendarDays } from "lucide-react";
+
+const WEEKDAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+function MemberPanel() {
+  const { user } = useAuth();
+  const [water, setWater] = useState(null);
+  const [menu, setMenu] = useState(null);
+  const active = user && (user.role === "admin" || user.subscription_status === "active");
+
+  useEffect(() => {
+    if (!active) return;
+    api.get("/water").then((r) => setWater(r.data)).catch(() => {});
+    api.get("/menu").then((r) => setMenu(r.data && r.data.dias ? r.data : null)).catch(() => {});
+  }, [active]);
+
+  if (!active) return null;
+
+  const meta = Number(localStorage.getItem("sn_agua_meta") || 8);
+  let cal = null;
+  try { cal = JSON.parse(localStorage.getItem("sn_calorias") || "null"); } catch {}
+  const hoy = WEEKDAYS[new Date().getDay()];
+  const menuHoy = menu?.dias?.find((d) => d.dia === hoy);
+
+  return (
+    <section className="bg-brand-green text-white" data-testid="member-daily-panel">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
+        <p className="eyebrow text-brand-gold">Hola, {user.name?.split(" ")[0]} · Tu día de hoy ({hoy})</p>
+        <div className="grid md:grid-cols-3 gap-4 mt-4">
+          <Link to="/bienestar" className="bg-white/10 hover:bg-white/15 transition-colors rounded-2xl p-5 backdrop-blur-sm border border-white/10">
+            <div className="flex items-center gap-2 text-brand-cream/80 text-sm"><Droplets className="w-4 h-4" /> Agua de hoy</div>
+            <p className="text-3xl font-serif font-bold mt-2">{water?.vasos ?? 0}<span className="text-base text-brand-cream/70"> / {meta} vasos</span></p>
+            <div className="h-2 bg-white/20 rounded-full overflow-hidden mt-3"><div className="h-full bg-sky-300" style={{ width: `${Math.min(100, ((water?.vasos || 0) / meta) * 100)}%` }} /></div>
+          </Link>
+
+          <Link to="/calculadora" className="bg-white/10 hover:bg-white/15 transition-colors rounded-2xl p-5 backdrop-blur-sm border border-white/10">
+            <div className="flex items-center gap-2 text-brand-cream/80 text-sm"><Flame className="w-4 h-4" /> Meta de calorías</div>
+            <p className="text-3xl font-serif font-bold mt-2">{cal?.cal ? `${cal.cal}` : "—"}<span className="text-base text-brand-cream/70"> kcal/día</span></p>
+            <p className="text-xs text-brand-cream/70 mt-3">{cal?.cal ? "Según tu calculadora" : "Calcula tu requerimiento"}</p>
+          </Link>
+
+          <Link to="/mi-menu" className="bg-white/10 hover:bg-white/15 transition-colors rounded-2xl p-5 backdrop-blur-sm border border-white/10">
+            <div className="flex items-center gap-2 text-brand-cream/80 text-sm"><CalendarDays className="w-4 h-4" /> Menú de hoy</div>
+            {menuHoy ? (
+              <ul className="mt-2 space-y-0.5">
+                {menuHoy.comidas.map((c, i) => (
+                  <li key={i} className="text-sm truncate"><span className="text-brand-gold font-mono text-[11px] uppercase mr-1">{c.tipo}</span>{c.nombre}</li>
+                ))}
+              </ul>
+            ) : <p className="text-sm text-brand-cream/70 mt-2">Genera tu menú semanal →</p>}
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function LandingWrapper() {
+  return (<><MemberPanel /><Landing /></>);
+}
+
 
 const CAT_ICON = { diabeticos: Activity, bajar_peso: Scale, comida_saludable: Apple, veganos: Sprout };
 
-export default function Landing() {
+function Landing() {
   const [categories, setCategories] = useState([]);
   const [recipes, setRecipes] = useState([]);
 

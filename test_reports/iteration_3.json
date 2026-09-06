@@ -1,0 +1,33 @@
+{
+  "summary": "Frontend-only verification of the new daily-habit features (Inicio member-daily-panel, Bienestar water tracker + Auto smart-goal + streak + reminders, Calculadora persists sn_peso). Logged in as admin compratendencia0@gmail.com and executed the full flow end-to-end via Playwright against the public preview URL. RESULTS: (1) Inicio panel [data-testid=member-daily-panel] renders at the top with 3 cards linking to /bienestar, /calculadora, /mi-menu; shows greeting + current weekday + Agua vasos/meta + calorías (— when no calc) + Menú de hoy (comidas or 'Genera tu menú semanal'). (2) After Calculadora submit with peso=70, localStorage.sn_peso='70' and sn_calorias JSON both stored; Inicio panel then shows 2507 kcal/día. (3) Bienestar water-add-1/2/3 correctly increment (0→1→3→6), water-minus decrements (6→5), water-reset zeros. (4) 'Auto' [water-auto-meta] with peso=70 sets meta to 10 vasos (matches expected ~10 for 70kg formula peso*35/250). (5) After filling water to 12 (>=10 meta), the streak element [water-streak] appears on Bienestar reload showing '🔥 Racha de 1 día cumpliendo tu meta' and the '¡Meta cumplida! 🎉' message. (6) Reminders card [reminders-card] lists all 5 reminders (desayuno, menu, almuerzo, agua, cena) with time inputs and toggles [reminder-toggle-*] that persist to localStorage.sn_reminders. All 6 review-request items PASS.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Bienestar water card", "issue": "After clicking water-add-N the streak indicator does not appear immediately even when today's vasos become >= meta. Root cause: add() updates only water.vasos in local state, not water.semana, so the streak calculation (which reads water.semana[0].vasos) still sees the stale value from initial GET /water. The streak correctly appears after a page reload/refetch. Suggested fix: after add()/reset(), either call loadWater() again OR update the semana entry for today in local state so the streak reflects live progress.", "selector": "[data-testid=water-streak]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Inicio member-daily-panel", "issues": ["On very fast navigations from Bienestar → Inicio the panel briefly shows the pre-fetch '0 / meta' before the /water GET resolves (observed once). Not a bug, cosmetic only — could show a skeleton/loader on the vasos value instead of defaulting to 0."]}
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_3.json"],
+  "action_items": [
+    "(LOW) In /app/frontend/src/pages/Bienestar.jsx, after api.post('/water/add') / '/water/reset', also refresh the semana (either call loadWater() or optimistically update the today entry inside water.semana) so the '🔥 Racha' indicator becomes visible without requiring a page reload.",
+    "(Optional cosmetic) Show a placeholder/skeleton in Landing.jsx MemberPanel Agua-de-hoy card while water is null instead of rendering '0 / meta'."
+  ],
+  "critical_code_review_comments": [
+    "Bienestar.jsx add()/reset() do a partial state update ({...w, vasos}) that leaves water.semana stale — this is the direct cause of the streak-not-updating UX issue. Prefer calling loadWater() (already defined) after mutations, or update the today entry inside semana explicitly.",
+    "Landing.jsx MemberPanel reads sn_agua_meta / sn_calorias from localStorage on render but does not re-read on storage events; if a user updates the calculator in another tab the panel won't refresh until navigation. Minor.",
+    "Streak computation iterates byDate sorted DESC and breaks on first day below meta — correct algorithm. However today's not-yet-completed day will always break the streak; consider skipping today when it is still below meta so previously-completed days can still show a positive streak.",
+    "reminders scheduling uses setTimeout with a single-day horizon — if the tab stays open past midnight, no reminder will fire the next day. Consider re-arming timers on a daily interval or on visibilitychange.",
+    "MemberPanel silently swallows GET /water and /menu errors (.catch(() => {})) with no user feedback — acceptable for a dashboard tile, but a subtle 'No se pudo cargar' hint would improve UX."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "not tested (per request)", "frontend": "100% (6/6 review items pass; 1 minor UX polish item)" },
+  "test_credentials": "Admin: compratendencia0@gmail.com / Elmo2893 (admin treated as active member).",
+  "seed_data_creation": "Wrote today's water rows for the admin user via POST /api/water/add (state: vasos=12 for fecha 2026-09-06). Set localStorage.sn_peso=70, sn_calorias, sn_agua_meta=10 during the browser test session.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 6 requested flows verified against the public preview URL. Only remaining concern is that the water streak does not render live after add() because Bienestar.jsx doesn't refresh water.semana; a single-line fix (call loadWater() after add/reset) resolves it. Backend /api/water endpoints returned correct values throughout (verified via curl: {vasos:12, semana:[{fecha:2026-09-06, vasos:12}]}).",
+  "rca of the issue": "Streak-not-visible after clicks: Bienestar.jsx uses `setWater((w) => ({ ...w, vasos: data.vasos }))` in add()/reset(); the streak IIFE reads `water.semana` which is never updated, so today's cached semana entry (vasos=0 from initial GET) always fails the `d.vasos >= meta` check and returns streak=0. On a full page reload GET /water is called fresh, semana[0].vasos becomes 12, and the streak renders correctly. Fix: after every add/reset, either call `loadWater()` or splice the today entry inside water.semana with the new vasos value."
+}

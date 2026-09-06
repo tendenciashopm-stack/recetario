@@ -40,6 +40,7 @@ export default function Calculadora() {
     const out = { bmr: Math.round(bmr), tdee: Math.round(tdee), objetivos, cal, macros };
     setRes(out);
     localStorage.setItem("sn_calorias", JSON.stringify(out));
+    localStorage.setItem("sn_peso", String(p));
   };
 
   const inputCls = "w-full mt-1 px-3 py-2.5 rounded-xl border border-brand-line bg-white focus:outline-none focus:ring-2 focus:ring-brand-green text-sm";
