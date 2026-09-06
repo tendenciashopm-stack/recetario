@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from "react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-import { Droplets, Plus, Minus, RotateCcw, Bell, BellOff, Loader2, Clock } from "lucide-react";
+import { Droplets, Plus, Minus, RotateCcw, Bell, BellOff, Loader2, Clock, Send } from "lucide-react";
+import { pushSupported, getCurrentPushSubscription, subscribePush, unsubscribePush, sendTestPush } from "@/lib/push";
 
-const DEFAULT_REMINDERS = [
+const FALLBACK = [
   { key: "desayuno", label: "Desayuno", time: "08:00", msg: "Ya es hora de tu desayuno 🍳", on: true },
   { key: "menu", label: "Revisar mi menú", time: "10:00", msg: "Recuerda revisar tu menú de hoy 📅", on: true },
   { key: "almuerzo", label: "Almuerzo", time: "13:00", msg: "Ya es hora de tu almuerzo 🍲", on: true },
@@ -15,15 +16,31 @@ export default function Bienestar() {
   const [water, setWater] = useState(null);
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState(Number(localStorage.getItem("sn_agua_meta") || 8));
-  const [reminders, setReminders] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("sn_reminders")) || DEFAULT_REMINDERS; } catch { return DEFAULT_REMINDERS; }
-  });
-  const [permission, setPermission] = useState(typeof Notification !== "undefined" ? Notification.permission : "unsupported");
-  const timers = useRef([]);
+  const [reminders, setReminders] = useState(FALLBACK);
+  const [subscribed, setSubscribed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const supported = pushSupported();
+  const saveTimer = useRef(null);
+  const firstLoad = useRef(true);
 
   const loadWater = () => api.get("/water").then((r) => setWater(r.data)).catch(() => {}).finally(() => setLoading(false));
   const refreshWater = () => api.get("/water").then((r) => setWater(r.data)).catch(() => {});
-  useEffect(() => { loadWater(); }, []);
+
+  useEffect(() => {
+    loadWater();
+    api.get("/reminders").then((r) => setReminders(r.data.reminders || FALLBACK)).catch(() => {});
+    if (supported) getCurrentPushSubscription().then((s) => setSubscribed(!!s)).catch(() => {});
+  }, []); // eslint-disable-line
+
+  // persist reminders to backend (debounced), skip first render
+  useEffect(() => {
+    if (firstLoad.current) { firstLoad.current = false; return; }
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      api.put("/reminders", { reminders }).catch(() => {});
+    }, 700);
+    return () => saveTimer.current && clearTimeout(saveTimer.current);
+  }, [reminders]);
 
   const add = async (n) => { await api.post(`/water/add?n=${n}`); refreshWater(); };
   const reset = async () => { await api.post("/water/reset"); refreshWater(); };
@@ -43,31 +60,29 @@ export default function Bienestar() {
     return s;
   })();
 
-  // reminders scheduling
-  useEffect(() => {
-    localStorage.setItem("sn_reminders", JSON.stringify(reminders));
-    timers.current.forEach((t) => clearTimeout(t));
-    timers.current = [];
-    if (permission !== "granted") return;
-    const now = new Date();
-    reminders.filter((r) => r.on).forEach((r) => {
-      const [h, m] = r.time.split(":").map(Number);
-      const when = new Date(); when.setHours(h, m, 0, 0);
-      const diff = when.getTime() - now.getTime();
-      if (diff > 0 && diff < 24 * 3600 * 1000) {
-        const id = setTimeout(() => { try { new Notification("Salud Nutrition", { body: r.msg }); } catch {} }, diff);
-        timers.current.push(id);
-      }
-    });
-    return () => { timers.current.forEach((t) => clearTimeout(t)); };
-  }, [reminders, permission]);
-
   const enableNotifs = async () => {
-    if (typeof Notification === "undefined") { toast.error("Tu navegador no soporta notificaciones"); return; }
-    const p = await Notification.requestPermission();
-    setPermission(p);
-    if (p === "granted") { toast.success("¡Notificaciones activadas!"); try { new Notification("Salud Nutrition", { body: "Te avisaremos a las horas configuradas ✅" }); } catch {} }
-    else toast.error("Permiso de notificaciones denegado");
+    setBusy(true);
+    try {
+      await subscribePush();
+      setSubscribed(true);
+      await api.put("/reminders", { reminders }).catch(() => {});
+      await sendTestPush();
+      toast.success("¡Notificaciones activadas! Te avisaremos aunque cierres la app.");
+    } catch (e) {
+      toast.error(e.message || "No se pudo activar las notificaciones");
+    } finally { setBusy(false); }
+  };
+
+  const disableNotifs = async () => {
+    setBusy(true);
+    try { await unsubscribePush(); setSubscribed(false); toast.info("Notificaciones desactivadas"); }
+    catch { toast.error("No se pudo desactivar"); }
+    finally { setBusy(false); }
+  };
+
+  const testNotif = async () => {
+    try { await sendTestPush(); toast.success("Enviamos una notificación de prueba 🔔"); }
+    catch { toast.error("No se pudo enviar la prueba"); }
   };
 
   const updateReminder = (key, patch) => setReminders((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -76,17 +91,17 @@ export default function Bienestar() {
   const pct = Math.min(100, Math.round((vasos / meta) * 100));
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 py-12">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 py-8 sm:py-12">
       <div className="flex items-center gap-3 mb-8">
         <span className="w-11 h-11 rounded-xl bg-brand-green text-white flex items-center justify-center"><Droplets className="w-6 h-6" /></span>
-        <div><p className="eyebrow">Hábitos diarios</p><h1 className="font-serif text-4xl font-bold text-brand-ink">Bienestar</h1></div>
+        <div><p className="eyebrow">Hábitos diarios</p><h1 className="font-serif text-3xl sm:text-4xl font-bold text-brand-ink">Bienestar</h1></div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
         {/* AGUA */}
-        <div className="bg-white rounded-2xl border border-brand-line p-6" data-testid="water-card">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-serif text-xl font-bold text-brand-ink flex items-center gap-2"><Droplets className="w-5 h-5 text-sky-500" /> Recordatorio de agua</h2>
+        <div className="bg-white rounded-2xl border border-brand-line p-5 sm:p-6 min-w-0" data-testid="water-card">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 className="font-serif text-lg sm:text-xl font-bold text-brand-ink flex items-center gap-2"><Droplets className="w-5 h-5 text-sky-500" /> Recordatorio de agua</h2>
             <div className="flex items-center gap-1 text-sm text-brand-muted">Meta:
               <input type="number" min="1" value={meta} onChange={(e) => saveMeta(e.target.value)} className="w-14 ml-1 px-2 py-1 rounded-lg border border-brand-line text-center" data-testid="water-meta" /> vasos
               <button onClick={metaInteligente} data-testid="water-auto-meta" className="ml-1 text-xs px-2 py-1 rounded-lg bg-sky-100 text-sky-700 font-medium hover:bg-sky-200">Auto</button>
@@ -134,32 +149,45 @@ export default function Bienestar() {
         </div>
 
         {/* RECORDATORIOS */}
-        <div className="bg-white rounded-2xl border border-brand-line p-6" data-testid="reminders-card">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-serif text-xl font-bold text-brand-ink flex items-center gap-2"><Bell className="w-5 h-5 text-brand-terracotta" /> Recordatorios</h2>
-            {permission === "granted" ? (
-              <span className="text-xs px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium flex items-center gap-1"><Bell className="w-3 h-3" /> Activas</span>
+        <div className="bg-white rounded-2xl border border-brand-line p-5 sm:p-6 min-w-0" data-testid="reminders-card">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 className="font-serif text-lg sm:text-xl font-bold text-brand-ink flex items-center gap-2"><Bell className="w-5 h-5 text-brand-terracotta" /> Recordatorios</h2>
+            {!supported ? (
+              <span className="text-xs px-3 py-1 rounded-full bg-brand-sand text-brand-muted font-medium">No disponible en este navegador</span>
+            ) : subscribed ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium flex items-center gap-1"><Bell className="w-3 h-3" /> Activas</span>
+                <button onClick={testNotif} data-testid="reminders-test" className="text-xs px-2.5 py-1 rounded-full border border-brand-line hover:bg-brand-sand flex items-center gap-1"><Send className="w-3 h-3" /> Prueba</button>
+                <button onClick={disableNotifs} disabled={busy} data-testid="reminders-disable" className="text-xs px-2.5 py-1 rounded-full border border-brand-line hover:bg-brand-sand text-brand-muted">Desactivar</button>
+              </div>
             ) : (
-              <button onClick={enableNotifs} data-testid="reminders-enable" className="text-xs px-3 py-1.5 rounded-full bg-brand-green text-white font-medium flex items-center gap-1"><Bell className="w-3 h-3" /> Activar notificaciones</button>
+              <button onClick={enableNotifs} disabled={busy} data-testid="reminders-enable" className="text-xs px-3 py-1.5 rounded-full bg-brand-green text-white font-medium flex items-center gap-1 disabled:opacity-60">
+                {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Bell className="w-3 h-3" />} Activar notificaciones
+              </button>
             )}
           </div>
 
           <div className="space-y-2">
             {reminders.map((r) => (
-              <div key={r.key} className="flex items-center gap-3 p-3 rounded-xl border border-brand-line" data-testid={`reminder-${r.key}`}>
+              <div key={r.key} className="flex items-center gap-2 sm:gap-3 p-3 rounded-xl border border-brand-line" data-testid={`reminder-${r.key}`}>
                 <Clock className="w-4 h-4 text-brand-muted shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-brand-ink">{r.label}</p>
                   <p className="text-xs text-brand-muted truncate">{r.msg}</p>
                 </div>
-                <input type="time" value={r.time} onChange={(e) => updateReminder(r.key, { time: e.target.value })} className="px-2 py-1 rounded-lg border border-brand-line text-sm" />
+                <input type="time" value={r.time} onChange={(e) => updateReminder(r.key, { time: e.target.value })} className="px-2 py-1 rounded-lg border border-brand-line text-sm shrink-0" data-testid={`reminder-time-${r.key}`} />
                 <button onClick={() => updateReminder(r.key, { on: !r.on })} data-testid={`reminder-toggle-${r.key}`} className={`w-11 h-6 rounded-full transition-colors relative shrink-0 ${r.on ? "bg-brand-green" : "bg-brand-line"}`}>
                   <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${r.on ? "left-[22px]" : "left-0.5"}`} />
                 </button>
               </div>
             ))}
           </div>
-          <p className="text-xs text-brand-muted mt-4 flex items-start gap-1.5"><BellOff className="w-4 h-4 shrink-0 mt-0.5" /> Las notificaciones llegan mientras tienes la app abierta en tu navegador. Configura las horas que prefieras.</p>
+          <p className="text-xs text-brand-muted mt-4 flex items-start gap-1.5">
+            <BellOff className="w-4 h-4 shrink-0 mt-0.5" />
+            {subscribed
+              ? "Recibirás estas notificaciones a la hora indicada, incluso con la app cerrada. Instala la app en tu celular para no perdértelas."
+              : "Activa las notificaciones para recibir recordatorios a las horas que elijas, aunque tengas la app cerrada."}
+          </p>
         </div>
       </div>
     </div>

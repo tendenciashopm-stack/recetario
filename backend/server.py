@@ -519,6 +519,138 @@ async def reset_water(user: dict = Depends(require_active)):
                               {"$set": {"vasos": 0, "user_id": user["id"], "fecha": today}}, upsert=True)
     return {"fecha": today, "vasos": 0}
 
+# ---------------- Push Notifications (PWA) ----------------
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from pywebpush import webpush, WebPushException
+
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "mailto:compratendencia0@gmail.com")
+PERU_TZ = timezone(timedelta(hours=-5))
+scheduler = AsyncIOScheduler(timezone="UTC")
+_vapid_pem_path = None
+_sent_marks = set()
+
+DEFAULT_REMINDERS = [
+    {"key": "desayuno", "label": "Desayuno", "time": "08:00", "msg": "Ya es hora de tu desayuno 🍳", "on": True},
+    {"key": "menu", "label": "Revisar mi menú", "time": "10:00", "msg": "Recuerda revisar tu menú de hoy 📅", "on": True},
+    {"key": "almuerzo", "label": "Almuerzo", "time": "13:00", "msg": "Ya es hora de tu almuerzo 🍲", "on": True},
+    {"key": "agua", "label": "Tomar agua", "time": "16:00", "msg": "Toma un vaso de agua 💧", "on": True},
+    {"key": "cena", "label": "Cena", "time": "20:00", "msg": "Ya es hora de tu cena 🥗", "on": True},
+]
+
+def _init_vapid():
+    global _vapid_pem_path
+    b64 = os.environ.get("VAPID_PRIVATE_PEM_B64", "")
+    if not b64:
+        return None
+    if _vapid_pem_path and os.path.exists(_vapid_pem_path):
+        return _vapid_pem_path
+    path = os.path.join(tempfile.gettempdir(), "sn_vapid_private.pem")
+    with open(path, "wb") as f:
+        f.write(base64.b64decode(b64))
+    _vapid_pem_path = path
+    return path
+
+class PushKeys(BaseModel):
+    p256dh: str
+    auth: str
+
+class PushSubIn(BaseModel):
+    endpoint: str
+    keys: PushKeys
+
+class ReminderItem(BaseModel):
+    key: str
+    label: str
+    time: str
+    msg: str
+    on: bool = True
+
+class RemindersIn(BaseModel):
+    reminders: List[ReminderItem]
+
+def _send_push(sub_doc, title, body, url="/bienestar", tag="reminder"):
+    pem = _init_vapid()
+    if not pem:
+        return False
+    try:
+        webpush(
+            subscription_info={"endpoint": sub_doc["endpoint"], "keys": sub_doc["keys"]},
+            data=json.dumps({"title": title, "body": body, "url": url, "tag": tag, "icon": "/icons/icon-192.png"}),
+            vapid_private_key=pem,
+            vapid_claims={"sub": VAPID_SUBJECT},
+        )
+        return True
+    except WebPushException as e:
+        code = getattr(getattr(e, "response", None), "status_code", None)
+        if code in (404, 410):
+            return "expired"
+        logger.error(f"push failed: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"push error: {e}")
+        return False
+
+async def _push_to_user(user_id, title, body, url="/bienestar", tag="reminder"):
+    subs = await db.push_subscriptions.find({"user_id": user_id}).to_list(50)
+    sent = 0
+    for s in subs:
+        r = await asyncio.to_thread(_send_push, s, title, body, url, tag)
+        if r == "expired":
+            await db.push_subscriptions.delete_one({"_id": s["_id"]})
+        elif r:
+            sent += 1
+    return sent
+
+@api_router.get("/push/vapid-public-key")
+async def vapid_public_key():
+    return {"publicKey": VAPID_PUBLIC_KEY}
+
+@api_router.post("/push/subscribe")
+async def push_subscribe(body: PushSubIn, user: dict = Depends(get_current_user)):
+    doc = {"endpoint": body.endpoint, "keys": body.keys.model_dump(), "user_id": user["id"], "updated_at": now_iso()}
+    await db.push_subscriptions.update_one({"endpoint": body.endpoint}, {"$set": doc}, upsert=True)
+    return {"ok": True}
+
+@api_router.post("/push/unsubscribe")
+async def push_unsubscribe(endpoint: str = Query(...), user: dict = Depends(get_current_user)):
+    await db.push_subscriptions.delete_one({"endpoint": endpoint, "user_id": user["id"]})
+    return {"ok": True}
+
+@api_router.post("/push/test")
+async def push_test(user: dict = Depends(get_current_user)):
+    sent = await _push_to_user(user["id"], "Salud Nutrition", "¡Notificaciones activadas! Te recordaremos a las horas que elijas ✅", "/bienestar", "test")
+    return {"ok": True, "sent": sent}
+
+@api_router.get("/reminders")
+async def get_reminders(user: dict = Depends(get_current_user)):
+    doc = await db.reminders.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not doc:
+        return {"reminders": DEFAULT_REMINDERS}
+    return {"reminders": doc.get("reminders", DEFAULT_REMINDERS)}
+
+@api_router.put("/reminders")
+async def put_reminders(body: RemindersIn, user: dict = Depends(get_current_user)):
+    rem = [r.model_dump() for r in body.reminders]
+    await db.reminders.update_one({"user_id": user["id"]}, {"$set": {"user_id": user["id"], "reminders": rem, "updated_at": now_iso()}}, upsert=True)
+    return {"reminders": rem}
+
+async def _reminder_tick():
+    now = datetime.now(PERU_TZ)
+    hhmm = now.strftime("%H:%M")
+    today = now.date().isoformat()
+    async for doc in db.reminders.find({}):
+        uid = doc.get("user_id")
+        for r in doc.get("reminders", []):
+            if r.get("on") and r.get("time") == hhmm:
+                mark = f"{uid}:{r.get('key')}:{today}:{hhmm}"
+                if mark in _sent_marks:
+                    continue
+                _sent_marks.add(mark)
+                await _push_to_user(uid, "Salud Nutrition", r.get("msg", "Recordatorio"), "/bienestar", r.get("key", "reminder"))
+    if len(_sent_marks) > 5000:
+        _sent_marks.clear()
+
 # ---------------- Files ----------------
 @api_router.get("/files/{path:path}")
 async def serve_file(path: str):
@@ -890,9 +1022,21 @@ async def startup():
         logger.error(f"storage init failed: {e}")
     await seed_admin()
     await seed_data()
+    try:
+        await db.push_subscriptions.create_index("endpoint", unique=True)
+        _init_vapid()
+        scheduler.add_job(_reminder_tick, "interval", minutes=1, id="reminders", replace_existing=True)
+        scheduler.start()
+        logger.info("Reminder scheduler started")
+    except Exception as e:
+        logger.error(f"scheduler start failed: {e}")
 
 @app.on_event("shutdown")
 async def shutdown():
+    try:
+        scheduler.shutdown(wait=False)
+    except Exception:
+        pass
     client.close()
 
 app.include_router(api_router)

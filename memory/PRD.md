@@ -61,4 +61,15 @@ App de recetas saludables con cobro mensual (S/15). Recetas para diabéticos, ba
 - P1: Vista previa/edición del draft de PDF antes de guardar.
 - P2: Recordatorio de renovación mensual y notificaciones por correo (Resend).
 - P2: Favoritos y listas de compras para clientes.
-- P2: Refactor server.py en módulos (auth/recipes/admin).
+- P2: Refactor server.py en módulos (auth/recipes/admin/push).
+
+## Update (2026-06) — PWA instalable + Notificaciones Push reales + móvil
+- App convertida en PWA instalable: `public/manifest.json` (tema verde #2E5A44), `public/service-worker.js` (precache + network-first en navegación + handlers push/notificationclick), íconos 192/512 + apple-touch-icon generados con IA, meta tags PWA/apple en index.html, registro del SW en `src/index.js`.
+- Notificaciones Push REALES (funcionan con la app cerrada): VAPID + pywebpush + APScheduler en backend.
+  - Env backend: VAPID_PUBLIC_KEY, VAPID_PRIVATE_PEM_B64, VAPID_SUBJECT.
+  - Endpoints: GET /api/push/vapid-public-key, POST /api/push/subscribe (auth), POST /api/push/unsubscribe, POST /api/push/test, GET/PUT /api/reminders.
+  - Colecciones: `push_subscriptions` (índice único en endpoint), `reminders` (por usuario).
+  - Scheduler `_reminder_tick` cada minuto en hora Perú (UTC-5) envía recordatorios activos que coinciden con la hora; dedup en memoria `_sent_marks`.
+  - Frontend: `src/lib/push.js` (subscribe/unsubscribe/test) y Bienestar reescrito para suscribir push + guardar recordatorios en backend (debounce 700ms). Los recordatorios ahora persisten en servidor (multi-dispositivo).
+- Móvil: barra de navegación inferior estilo app (`components/MobileNav.jsx`, solo móvil, 5 accesos), banner de instalación (`components/InstallPrompt.jsx`, soporta iOS con instrucciones), guard global `overflow-x-hidden` + `min-w-0` en tarjetas para eliminar scroll horizontal, padding inferior `.pb-nav` para no tapar contenido.
+- Testing iteration_4: 9/9 backend + 12/12 checks frontend, 100% pass. NOTA: la entrega real de push a navegador cerrado no se puede automatizar en headless; se validó que los endpoints responden y no dan 500. El usuario debe probar la entrega real instalando la PWA en su celular.

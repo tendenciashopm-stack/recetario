@@ -4,6 +4,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { MobileNav } from "@/components/MobileNav";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { Toaster } from "@/components/ui/sonner";
 import Landing from "@/pages/Landing";
 import Recipes from "@/pages/Recipes";
@@ -22,8 +24,10 @@ function Layout({ children }) {
   return (
     <div className="App flex flex-col min-h-screen">
       <Navbar />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-nav md:pb-0">{children}</main>
       <Footer />
+      <MobileNav />
+      <InstallPrompt />
     </div>
   );
 }
