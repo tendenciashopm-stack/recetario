@@ -50,6 +50,12 @@ App de recetas saludables con cobro mensual (S/15). Recetas para diabéticos, ba
 - Nuevas 5 secciones: Inicio, Recetas, Mi Menú (generador semanal con cuestionario), Compras (lista automática desde el menú), Mi Progreso (registro y estadísticas). Rutas protegidas por suscripción activa (require_active). Endpoints: /api/menu/generate, /api/menu, /api/menu/shopping-list, /api/progress.
 - Testing iteration_2: 7 flujos frontend 100% pass.
 
+## Update (2026-09-06) — Herramientas diarias
+- Calculadora de calorías (Mifflin-St Jeor) en /calculadora con macros y aviso orientativo.
+- Nutrición estimada con IA para 86 recetas; Mi Menú muestra kcal/macros por día y promedio.
+- Bienestar (/bienestar): registro de agua (backend persistente: /api/water, /water/add, /water/reset) con meta y progreso semanal; Recordatorios con notificaciones del navegador (client-side, horas configurables).
+- Admin dueño: compratendencia0@gmail.com / Elmo2893.
+
 ## Backlog / Next
 - P1: Generación automática de imagen para recetas importadas por PDF (nano banana).
 - P1: Vista previa/edición del draft de PDF antes de guardar.

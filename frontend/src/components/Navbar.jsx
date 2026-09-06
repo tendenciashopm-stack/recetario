@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Leaf, Menu, X, ShieldCheck, Home, UtensilsCrossed, CalendarDays, ShoppingCart, BarChart3, CreditCard, Calculator } from "lucide-react";
+import { Leaf, Menu, X, ShieldCheck, Home, UtensilsCrossed, CalendarDays, ShoppingCart, BarChart3, CreditCard, Calculator, Droplets } from "lucide-react";
 import { useState } from "react";
 
 export function Navbar() {
@@ -19,6 +19,7 @@ export function Navbar() {
       { to: "/calculadora", label: "Calculadora", icon: Calculator },
       { to: "/mi-menu", label: "Mi Menú", icon: CalendarDays },
       { to: "/compras", label: "Compras", icon: ShoppingCart },
+      { to: "/bienestar", label: "Bienestar", icon: Droplets },
       { to: "/mi-progreso", label: "Mi Progreso", icon: BarChart3 },
     ];
   } else if (user) {

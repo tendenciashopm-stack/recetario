@@ -489,6 +489,36 @@ async def del_progress(entry_id: str, user: dict = Depends(require_active)):
     await db.progress.delete_one({"id": entry_id, "user_id": user["id"]})
     return {"ok": True}
 
+def _today():
+    return datetime.now(timezone.utc).date().isoformat()
+
+@api_router.get("/water")
+async def get_water(user: dict = Depends(require_active)):
+    today = _today()
+    doc = await db.water.find_one({"user_id": user["id"], "fecha": today})
+    rows = await db.water.find({"user_id": user["id"]}, {"_id": 0}).sort("fecha", -1).to_list(7)
+    semana = [{"fecha": r["fecha"], "vasos": r.get("vasos", 0)} for r in rows]
+    return {"fecha": today, "vasos": (doc.get("vasos", 0) if doc else 0), "semana": semana}
+
+@api_router.post("/water/add")
+async def add_water(n: int = Query(1), user: dict = Depends(require_active)):
+    today = _today()
+    await db.water.update_one({"user_id": user["id"], "fecha": today},
+                              {"$inc": {"vasos": n}, "$setOnInsert": {"user_id": user["id"], "fecha": today}}, upsert=True)
+    doc = await db.water.find_one({"user_id": user["id"], "fecha": today})
+    v = doc.get("vasos", 0)
+    if v < 0:
+        v = 0
+        await db.water.update_one({"user_id": user["id"], "fecha": today}, {"$set": {"vasos": 0}})
+    return {"fecha": today, "vasos": v}
+
+@api_router.post("/water/reset")
+async def reset_water(user: dict = Depends(require_active)):
+    today = _today()
+    await db.water.update_one({"user_id": user["id"], "fecha": today},
+                              {"$set": {"vasos": 0, "user_id": user["id"], "fecha": today}}, upsert=True)
+    return {"fecha": today, "vasos": 0}
+
 # ---------------- Files ----------------
 @api_router.get("/files/{path:path}")
 async def serve_file(path: str):
