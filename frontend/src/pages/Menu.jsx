@@ -14,14 +14,18 @@ const OBJETIVOS = [
 
 export default function Menu() {
   const [menu, setMenu] = useState(null);
+  const [nutri, setNutri] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const loadNutri = () => api.get("/menu/nutrition").then((r) => setNutri(r.data)).catch(() => {});
   const [objetivo, setObjetivo] = useState("todas");
   const [comidas, setComidas] = useState(3);
   const [evitar, setEvitar] = useState("");
 
   useEffect(() => {
-    api.get("/menu").then((r) => setMenu(r.data && r.data.dias ? r.data : null)).catch(() => {}).finally(() => setLoading(false));
+    api.get("/menu").then((r) => {
+      if (r.data && r.data.dias) { setMenu(r.data); loadNutri(); } else { setMenu(null); }
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const generate = async () => {
@@ -32,6 +36,7 @@ export default function Menu() {
         evitar: evitar.split(",").map((s) => s.trim()).filter(Boolean),
       });
       setMenu(data);
+      loadNutri();
       toast.success("¡Tu menú semanal está listo!");
     } catch (e) { toast.error(formatApiError(e.response?.data?.detail)); }
     finally { setGenerating(false); }
@@ -79,10 +84,35 @@ export default function Menu() {
             <h2 className="font-serif text-2xl font-bold text-brand-ink">Tu semana</h2>
             <Link to="/compras" data-testid="menu-to-compras" className="text-sm font-semibold text-brand-green hover:underline flex items-center gap-1"><ShoppingCart className="w-4 h-4" /> Ver lista de compras</Link>
           </div>
+
+          {nutri?.promedio && (
+            <div className="bg-brand-greenLight border border-brand-green/20 rounded-2xl p-5 mb-6" data-testid="menu-nutrition-summary">
+              <p className="text-sm font-semibold text-brand-ink mb-3">Promedio nutricional por día <span className="font-normal text-brand-muted">(aproximado)</span></p>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                {[["Calorías", nutri.promedio.calorias, "kcal"], ["Proteínas", nutri.promedio.proteinas, "g"], ["Carbohidratos", nutri.promedio.carbohidratos, "g"], ["Grasas", nutri.promedio.grasas, "g"], ["Fibra", nutri.promedio.fibra, "g"]].map(([l, v, u]) => (
+                  <div key={l} className="bg-white rounded-xl border border-brand-line px-3 py-2 text-center">
+                    <p className="text-lg font-serif font-bold text-brand-green">{v}<span className="text-xs text-brand-muted font-sans"> {u}</span></p>
+                    <p className="text-[11px] text-brand-muted">{l}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {menu.dias.map((d, i) => (
+            {menu.dias.map((d, i) => {
+              const nd = (nutri?.dias || []).find((x) => x.dia === d.dia);
+              return (
               <div key={i} className="bg-white rounded-2xl border border-brand-line overflow-hidden fade-up" style={{ animationDelay: `${i * 50}ms` }} data-testid={`menu-day-${i}`}>
-                <div className="bg-brand-green text-white px-4 py-2.5 font-semibold font-sans">{d.dia}</div>
+                <div className="bg-brand-green text-white px-4 py-2.5 font-semibold font-sans flex items-center justify-between">
+                  <span>{d.dia}</span>
+                  {nd && <span className="text-xs font-mono font-normal text-brand-cream/90">{nd.calorias} kcal</span>}
+                </div>
+                {nd && (
+                  <div className="px-4 py-2 border-b border-brand-line bg-brand-sand/40 text-[11px] text-brand-muted flex gap-3" data-testid={`menu-day-nutri-${i}`}>
+                    <span>P {nd.proteinas}g</span><span>C {nd.carbohidratos}g</span><span>G {nd.grasas}g</span><span>Fibra {nd.fibra}g</span>
+                  </div>
+                )}
                 <div className="divide-y divide-brand-line">
                   {d.comidas.map((c, j) => (
                     <Link to={`/recetas/${c.recipe_id}`} key={j} className="flex items-center gap-3 p-3 hover:bg-brand-sand transition-colors">
@@ -95,7 +125,7 @@ export default function Menu() {
                   ))}
                 </div>
               </div>
-            ))}
+            );})}
           </div>
         </>
       ) : (

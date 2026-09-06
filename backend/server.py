@@ -4,6 +4,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 import os
+import re
 import uuid
 import json
 import base64
@@ -440,6 +441,34 @@ async def shopping_list(user: dict = Depends(require_active)):
                 seen[k] = ing.strip()
     items = sorted(seen.values(), key=lambda x: x.lower())
     return {"items": items, "count": len(items)}
+
+def _num(s):
+    m = re.search(r"[\d]+(?:[.,]\d+)?", str(s or ""))
+    return float(m.group().replace(",", ".")) if m else 0.0
+
+@api_router.get("/menu/nutrition")
+async def menu_nutrition(user: dict = Depends(require_active)):
+    m = await db.menus.find_one({"user_id": user["id"]})
+    if not m:
+        return {"dias": [], "semana": {}, "promedio": {}}
+    ids = list({c["recipe_id"] for d in m["dias"] for c in d["comidas"]})
+    recs = {r["id"]: r for r in await db.recipes.find({"id": {"$in": ids}}, {"_id": 0}).to_list(2000)}
+    keys = ["calorias", "proteinas", "carbohidratos", "grasas", "fibra"]
+    dias = []
+    semana = {k: 0 for k in keys}
+    for d in m["dias"]:
+        tot = {k: 0.0 for k in keys}
+        for c in d["comidas"]:
+            n = (recs.get(c["recipe_id"], {}) or {}).get("nutricion", {}) or {}
+            for k in keys:
+                tot[k] += _num(n.get(k))
+        tot = {k: round(v) for k, v in tot.items()}
+        for k in keys:
+            semana[k] += tot[k]
+        dias.append({"dia": d["dia"], **tot})
+    nd = len(dias) or 1
+    promedio = {k: round(semana[k] / nd) for k in keys}
+    return {"dias": dias, "semana": semana, "promedio": promedio}
 
 @api_router.post("/progress")
 async def add_progress(body: ProgressIn, user: dict = Depends(require_active)):
