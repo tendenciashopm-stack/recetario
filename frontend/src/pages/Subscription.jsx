@@ -16,16 +16,20 @@ export default function Subscription() {
   const [settings, setSettings] = useState(null);
   const [sub, setSub] = useState(null);
   const [method, setMethod] = useState("yape");
+  const [plans, setPlans] = useState([]);
+  const [plan, setPlan] = useState("1m");
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
   const loadSub = () => api.get("/subscription/me").then((r) => setSub(r.data)).catch(() => {});
   useEffect(() => {
     api.get("/settings").then((r) => setSettings(r.data)).catch(() => {});
+    api.get("/plans").then((r) => setPlans(r.data.plans || [])).catch(() => {});
     loadSub();
   }, []);
 
   const copy = (t) => { navigator.clipboard.writeText(t); toast.success("Copiado al portapapeles"); };
+  const selectedPlan = plans.find((p) => p.id === plan);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -34,6 +38,7 @@ export default function Subscription() {
     try {
       const fd = new FormData();
       fd.append("metodo", method);
+      fd.append("plan", plan);
       fd.append("file", file);
       await api.post("/subscription/pay", fd, { headers: { "Content-Type": "multipart/form-data" } });
       toast.success("¡Comprobante enviado! Un administrador validará tu pago pronto.");
@@ -71,16 +76,40 @@ export default function Subscription() {
           <div className="rounded-2xl bg-brand-greenLight border border-brand-green/20 p-5 flex items-center gap-3">
             <CreditCard className="w-6 h-6 text-brand-green" />
             <div><p className="font-semibold text-brand-ink">Sin suscripción activa</p>
-              <p className="text-sm text-brand-muted">Realiza el pago de S/ {settings?.precio || "15.00"} y sube tu comprobante para activar tu acceso.</p></div>
+              <p className="text-sm text-brand-muted">Elige un plan, realiza el pago y sube tu comprobante para activar tu acceso.</p></div>
           </div>
         )}
+      </div>
+
+      {/* plan selection */}
+      <div className="mb-10" data-testid="plan-selection">
+        <h2 className="font-serif text-2xl font-bold text-brand-ink mb-1">Elige tu plan</h2>
+        <p className="text-sm text-brand-muted mb-4">Acceso renovable. Al renovar, los días se suman a los que ya tienes.</p>
+        <div className="grid sm:grid-cols-3 gap-4">
+          {plans.map((p) => {
+            const active = plan === p.id;
+            const saving = 10 * p.meses - parseFloat(p.monto);
+            return (
+              <button key={p.id} type="button" onClick={() => setPlan(p.id)} data-testid={`plan-${p.id}`}
+                className={`relative text-left rounded-2xl border-2 p-5 transition-all ${active ? "border-brand-green bg-brand-greenLight shadow-md" : "border-brand-line bg-white hover:border-brand-green/40"}`}>
+                {saving > 0 && <span className="absolute -top-2.5 right-4 text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-terracotta text-white">Ahorra S/ {saving}</span>}
+                <p className="font-serif text-lg font-bold text-brand-ink">{p.label}</p>
+                <p className="text-3xl font-serif font-bold text-brand-green mt-1">S/ {p.monto}</p>
+                <p className="text-xs text-brand-muted mt-1">{p.dias} días de acceso</p>
+                <span className={`mt-3 inline-flex items-center gap-1 text-xs font-semibold ${active ? "text-brand-green" : "text-brand-muted"}`}>
+                  <CheckCircle2 className="w-4 h-4" /> {active ? "Seleccionado" : "Elegir"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
         {/* payment info */}
         <div className="bg-white rounded-2xl border border-brand-line p-7">
           <h2 className="font-serif text-2xl font-bold text-brand-ink">1. Realiza el pago</h2>
-          <p className="text-3xl font-serif font-bold text-brand-green mt-2">S/ {settings?.precio || "15.00"} <span className="text-base text-brand-muted font-sans">/ mes</span></p>
+          <p className="text-3xl font-serif font-bold text-brand-green mt-2">S/ {selectedPlan?.monto || settings?.precio || "10.00"} <span className="text-base text-brand-muted font-sans">· {selectedPlan?.label || "1 mes"}</span></p>
 
           <div className="flex gap-2 mt-6">
             {METHODS.map((mt) => (
@@ -124,7 +153,7 @@ export default function Subscription() {
           <div className="space-y-2">
             {sub.payments.map((p) => (
               <div key={p.id} className="flex items-center justify-between bg-white rounded-xl border border-brand-line px-5 py-3 text-sm">
-                <span className="font-medium capitalize">{p.metodo}</span>
+                <span className="font-medium capitalize">{p.metodo}{p.plan_label ? ` · ${p.plan_label} (S/ ${p.monto})` : ""}</span>
                 <span className="text-brand-muted">{new Date(p.created_at).toLocaleDateString("es-PE")}</span>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${p.status === "approved" ? "bg-emerald-100 text-emerald-700" : p.status === "rejected" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
                   {p.status === "approved" ? "Aprobado" : p.status === "rejected" ? "Rechazado" : "Pendiente"}

@@ -352,7 +352,7 @@ function PagosTab() {
   const load = useCallback(() => api.get("/admin/payments").then((r) => setPayments(r.data)).catch(() => {}), []);
   useEffect(() => { load(); }, [load]);
 
-  const approve = async (id) => { await api.post(`/admin/payments/${id}/approve?days=30`); toast.success("Pago aprobado, suscripción activada"); load(); };
+  const approve = async (id) => { const r = await api.post(`/admin/payments/${id}/approve`); toast.success(`Pago aprobado · ${r.data.days} días de acceso`); load(); };
   const reject = async (id) => { await api.post(`/admin/payments/${id}/reject`); toast.success("Pago rechazado"); load(); };
 
   return (
@@ -363,6 +363,7 @@ function PagosTab() {
           <div className="flex-1 min-w-[200px]">
             <p className="font-semibold text-brand-ink">{p.user_name} <span className="text-brand-muted font-normal text-sm">· {p.user_email}</span></p>
             <p className="text-sm text-brand-muted mt-1">Método: <span className="capitalize font-medium text-brand-ink">{p.metodo}</span> · {new Date(p.created_at).toLocaleString("es-PE")}</p>
+            {p.plan_label && <p className="text-sm mt-1"><span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-brand-greenLight text-brand-green font-semibold text-xs">Plan {p.plan_label} · S/ {p.monto} · {p.plan_dias} días</span></p>}
           </div>
           <a href={`${API}/files/${p.proof_path}`} target="_blank" rel="noreferrer" data-testid={`admin-view-proof-${p.id}`} className="text-sm px-4 py-2 rounded-full border border-brand-line hover:bg-brand-sand flex items-center gap-1"><Eye className="w-4 h-4" /> Ver comprobante</a>
           {p.status === "pending" ? (

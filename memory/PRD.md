@@ -77,3 +77,9 @@ App de recetas saludables con cobro mensual (S/15). Recetas para diabéticos, ba
 ## Update (2026-06) — Aviso de renovación por push
 - Job diario `_renewal_tick` (cron 15:00 UTC = 10:00 Perú) que notifica por push a clientes con suscripción activa cuando faltan 3, 2, 1 o 0 días para vencer, enlazando a /suscripcion. Dedup diario vía `_sent_marks`.
 - Endpoint admin de prueba: POST /api/admin/renewal-check → {ok, matched}. Verificado: usuario que vence en 3 días → matched:1.
+
+## Update (2026-06) — Planes de suscripción (30 días renovables)
+- 3 planes en /suscripcion: 1 mes S/10 (30 días), 2 meses S/18 (60 días, ahorra S/2), 3 meses S/25 (90 días, ahorra S/5). Constante `PLANS` en backend + GET /api/plans.
+- El usuario elige plan antes de subir comprobante; el plan se guarda en el pago (plan, plan_dias, monto).
+- Al aprobar (POST /admin/payments/{id}/approve), se otorgan los días del plan y, si la suscripción sigue activa, **los días se acumulan** desde la fecha de vencimiento actual (renovable). Admin puede override con ?days=N.
+- Admin ve el plan y monto en cada comprobante; historial del usuario muestra el plan. Verificado por curl: pago 3m → 90 días otorgados; UI móvil sin overflow.

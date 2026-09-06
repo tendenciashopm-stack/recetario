@@ -362,8 +362,19 @@ async def my_subscription(user: dict = Depends(get_current_user)):
     payments = await db.payments.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(50)
     return {"status": subscription_status(user), "expires_at": user.get("subscription_expires_at"), "payments": payments}
 
+PLANS = {
+    "1m": {"id": "1m", "meses": 1, "dias": 30, "monto": "10.00", "label": "1 mes"},
+    "2m": {"id": "2m", "meses": 2, "dias": 60, "monto": "18.00", "label": "2 meses"},
+    "3m": {"id": "3m", "meses": 3, "dias": 90, "monto": "25.00", "label": "3 meses"},
+}
+
+@api_router.get("/plans")
+async def get_plans():
+    return {"plans": list(PLANS.values()), "moneda": "PEN"}
+
 @api_router.post("/subscription/pay")
-async def submit_payment(request: Request, metodo: str = Form(...), file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+async def submit_payment(request: Request, metodo: str = Form(...), plan: str = Form("1m"), file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    pl = PLANS.get(plan, PLANS["1m"])
     ext = (file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "png")
     path = f"{APP_NAME}/proofs/{user['id']}/{uuid.uuid4()}.{ext}"
     data = await file.read()
@@ -371,7 +382,8 @@ async def submit_payment(request: Request, metodo: str = Form(...), file: Upload
     result = put_object(path, data, ct)
     pid = str(uuid.uuid4())
     payment = {"id": pid, "user_id": user["id"], "user_name": user.get("name"), "user_email": user["email"],
-               "metodo": metodo, "proof_path": result["path"], "status": "pending",
+               "metodo": metodo, "plan": pl["id"], "plan_label": pl["label"], "plan_dias": pl["dias"], "monto": pl["monto"],
+               "proof_path": result["path"], "status": "pending",
                "created_at": now_iso(), "reviewed_at": None}
     await db.payments.insert_one(payment)
     await db.users.update_one({"id": user["id"]}, {"$set": {"subscription_status": "pending"}})
@@ -898,14 +910,26 @@ async def admin_payments(status: Optional[str] = None, admin: dict = Depends(req
     return payments
 
 @api_router.post("/admin/payments/{payment_id}/approve")
-async def approve_payment(payment_id: str, days: int = Query(30), admin: dict = Depends(require_admin)):
+async def approve_payment(payment_id: str, days: Optional[int] = None, admin: dict = Depends(require_admin)):
     p = await db.payments.find_one({"id": payment_id})
     if not p:
         raise HTTPException(status_code=404, detail="Comprobante no encontrado")
-    exp = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
+    grant_days = days if days is not None else int(p.get("plan_dias", 30))
+    now = datetime.now(timezone.utc)
+    base = now
+    u = await db.users.find_one({"id": p["user_id"]})
+    cur = u.get("subscription_expires_at") if u else None
+    if cur:
+        try:
+            cur_dt = datetime.fromisoformat(cur)
+            if cur_dt > now:
+                base = cur_dt
+        except Exception:
+            pass
+    exp = (base + timedelta(days=grant_days)).isoformat()
     await db.payments.update_one({"id": payment_id}, {"$set": {"status": "approved", "reviewed_at": now_iso()}})
     await db.users.update_one({"id": p["user_id"]}, {"$set": {"subscription_status": "active", "subscription_expires_at": exp}})
-    return {"ok": True}
+    return {"ok": True, "days": grant_days, "expires_at": exp}
 
 @api_router.post("/admin/payments/{payment_id}/reject")
 async def reject_payment(payment_id: str, admin: dict = Depends(require_admin)):
