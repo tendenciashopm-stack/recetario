@@ -7,6 +7,7 @@ import os
 import uuid
 import json
 import base64
+import random
 import asyncio
 import logging
 import tempfile
@@ -206,6 +207,11 @@ async def require_admin(user: dict = Depends(get_current_user)) -> dict:
         raise HTTPException(status_code=403, detail="Acceso solo para administradores")
     return user
 
+async def require_active(user: dict = Depends(get_current_user)) -> dict:
+    if not has_active_subscription(user):
+        raise HTTPException(status_code=403, detail="Necesitas una suscripción activa")
+    return user
+
 # ---------------- Models ----------------
 class RegisterIn(BaseModel):
     name: str
@@ -370,6 +376,89 @@ async def submit_payment(request: Request, metodo: str = Form(...), file: Upload
     await db.users.update_one({"id": user["id"]}, {"$set": {"subscription_status": "pending"}})
     payment.pop("_id", None)
     return payment
+
+# ---------------- Mi Menú / Compras / Progreso ----------------
+DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+
+class MenuGenIn(BaseModel):
+    objetivo: str = "comida_saludable"
+    comidas_por_dia: int = 3
+    evitar: List[str] = []
+
+class ProgressIn(BaseModel):
+    fecha: str
+    recetas_cocinadas: int = 0
+    peso: Optional[str] = ""
+    nota: Optional[str] = ""
+
+@api_router.post("/menu/generate")
+async def generate_menu(body: MenuGenIn, user: dict = Depends(require_active)):
+    query = {"published": True}
+    if body.objetivo in CATEGORY_IDS:
+        query["categoria"] = body.objetivo
+    pool = await db.recipes.find(query, {"_id": 0}).to_list(2000)
+    if len(pool) < 4:
+        pool = await db.recipes.find({"published": True}, {"_id": 0}).to_list(2000)
+    evit = [e.strip().lower() for e in body.evitar if e.strip()]
+    def ok(r):
+        text = " ".join(r.get("ingredientes", [])).lower() + " " + r.get("nombre_plato", "").lower()
+        return not any(e in text for e in evit)
+    filtered = [r for r in pool if ok(r)] or pool
+    meals = ["Desayuno", "Almuerzo", "Cena"] if body.comidas_por_dia >= 3 else ["Almuerzo", "Cena"]
+    dias = []
+    for d in DIAS_SEMANA:
+        if len(filtered) >= len(meals):
+            picks = random.sample(filtered, len(meals))
+        else:
+            picks = [random.choice(filtered) for _ in meals]
+        comidas = [{"tipo": meals[i], "recipe_id": p["id"], "nombre": p["nombre_plato"],
+                    "imagen_url": p.get("imagen_url", ""), "categoria": p["categoria"]} for i, p in enumerate(picks)]
+        dias.append({"dia": d, "comidas": comidas})
+    doc = {"id": str(uuid.uuid4()), "user_id": user["id"], "objetivo": body.objetivo,
+           "comidas_por_dia": len(meals), "dias": dias, "created_at": now_iso()}
+    await db.menus.replace_one({"user_id": user["id"]}, doc, upsert=True)
+    doc.pop("_id", None)
+    return doc
+
+@api_router.get("/menu")
+async def get_menu(user: dict = Depends(require_active)):
+    m = await db.menus.find_one({"user_id": user["id"]}, {"_id": 0})
+    return m or {}
+
+@api_router.get("/menu/shopping-list")
+async def shopping_list(user: dict = Depends(require_active)):
+    m = await db.menus.find_one({"user_id": user["id"]})
+    if not m:
+        return {"items": [], "count": 0}
+    ids = list({c["recipe_id"] for d in m["dias"] for c in d["comidas"]})
+    recs = await db.recipes.find({"id": {"$in": ids}}, {"_id": 0}).to_list(2000)
+    seen = {}
+    for r in recs:
+        for ing in r.get("ingredientes", []):
+            k = ing.strip().lower()
+            if k and k not in seen:
+                seen[k] = ing.strip()
+    items = sorted(seen.values(), key=lambda x: x.lower())
+    return {"items": items, "count": len(items)}
+
+@api_router.post("/progress")
+async def add_progress(body: ProgressIn, user: dict = Depends(require_active)):
+    doc = body.model_dump()
+    doc.update({"id": str(uuid.uuid4()), "user_id": user["id"], "created_at": now_iso()})
+    await db.progress.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api_router.get("/progress")
+async def get_progress(user: dict = Depends(require_active)):
+    rows = await db.progress.find({"user_id": user["id"]}, {"_id": 0}).sort("fecha", -1).to_list(365)
+    total = sum(r.get("recetas_cocinadas", 0) for r in rows)
+    return {"entries": rows, "total_recetas": total, "dias_registrados": len(rows)}
+
+@api_router.delete("/progress/{entry_id}")
+async def del_progress(entry_id: str, user: dict = Depends(require_active)):
+    await db.progress.delete_one({"id": entry_id, "user_id": user["id"]})
+    return {"ok": True}
 
 # ---------------- Files ----------------
 @api_router.get("/files/{path:path}")
@@ -624,12 +713,12 @@ async def admin_stats(admin: dict = Depends(require_admin)):
 
 # ---------------- Defaults / seed ----------------
 DEFAULT_SETTINGS = {
-    "key": "payment_info", "precio": "15.00", "moneda": "PEN",
-    "yape": {"numero": "999 888 777", "titular": "Salud Nutrition"},
-    "plin": {"numero": "999 888 777", "titular": "Salud Nutrition"},
-    "bcp": {"cuenta": "191-0000000-0-00", "cci": "00219100000000000000", "titular": "Salud Nutrition E.I.R.L."},
-    "bbva": {"cuenta": "0011-0000-0000000000", "cci": "01100000000000000000", "titular": "Salud Nutrition E.I.R.L."},
-    "instrucciones": "Realiza el pago de S/ 15.00 por el mes de suscripción y sube tu comprobante. Un administrador validará tu pago y activará tu acceso.",
+    "key": "payment_info", "precio": "10.00", "moneda": "PEN",
+    "yape": {"numero": "", "titular": "Julio Aro"},
+    "plin": {"numero": "", "titular": "Julio Aro"},
+    "bcp": {"cuenta": "", "cci": "", "titular": "Julio Aro"},
+    "bbva": {"cuenta": "", "cci": "", "titular": "Julio Aro"},
+    "instrucciones": "Realiza el pago de S/ 10.00 por el mes de suscripción y sube tu comprobante. Un administrador validará tu pago y activará tu acceso.",
 }
 
 SAMPLE_RECIPES = [

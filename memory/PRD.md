@@ -43,6 +43,13 @@ App de recetas saludables con cobro mensual (S/15). Recetas para diabéticos, ba
 - Endpoint create /admin/recipes admite ?auto_generate=false para importaciones masivas sin generar imágenes.
 - Admin: admin@saludnutrition.com / Admin2026! (crear cuentas desde Admin → Usuarios, rol admin o cliente).
 
+## Update (2026-09-02) — Área de miembros + precio S/10 + admin dueño
+- Precio S/10 (antes 15). Datos de pago Yape/Plin titular "Julio Aro". Solo se muestra el monto en /suscripcion.
+- Admin del dueño: compratendencia0@gmail.com / Compra2026$.
+- Admin → Usuarios: muestra estado + fecha de vencimiento y botón "Renovar 30d" para el ciclo mensual.
+- Nuevas 5 secciones: Inicio, Recetas, Mi Menú (generador semanal con cuestionario), Compras (lista automática desde el menú), Mi Progreso (registro y estadísticas). Rutas protegidas por suscripción activa (require_active). Endpoints: /api/menu/generate, /api/menu, /api/menu/shopping-list, /api/progress.
+- Testing iteration_2: 7 flujos frontend 100% pass.
+
 ## Backlog / Next
 - P1: Generación automática de imagen para recetas importadas por PDF (nano banana).
 - P1: Vista previa/edición del draft de PDF antes de guardar.
