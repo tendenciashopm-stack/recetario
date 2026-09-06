@@ -73,3 +73,7 @@ App de recetas saludables con cobro mensual (S/15). Recetas para diabéticos, ba
   - Frontend: `src/lib/push.js` (subscribe/unsubscribe/test) y Bienestar reescrito para suscribir push + guardar recordatorios en backend (debounce 700ms). Los recordatorios ahora persisten en servidor (multi-dispositivo).
 - Móvil: barra de navegación inferior estilo app (`components/MobileNav.jsx`, solo móvil, 5 accesos), banner de instalación (`components/InstallPrompt.jsx`, soporta iOS con instrucciones), guard global `overflow-x-hidden` + `min-w-0` en tarjetas para eliminar scroll horizontal, padding inferior `.pb-nav` para no tapar contenido.
 - Testing iteration_4: 9/9 backend + 12/12 checks frontend, 100% pass. NOTA: la entrega real de push a navegador cerrado no se puede automatizar en headless; se validó que los endpoints responden y no dan 500. El usuario debe probar la entrega real instalando la PWA en su celular.
+
+## Update (2026-06) — Aviso de renovación por push
+- Job diario `_renewal_tick` (cron 15:00 UTC = 10:00 Perú) que notifica por push a clientes con suscripción activa cuando faltan 3, 2, 1 o 0 días para vencer, enlazando a /suscripcion. Dedup diario vía `_sent_marks`.
+- Endpoint admin de prueba: POST /api/admin/renewal-check → {ok, matched}. Verificado: usuario que vence en 3 días → matched:1.

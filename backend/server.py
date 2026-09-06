@@ -651,6 +651,37 @@ async def _reminder_tick():
     if len(_sent_marks) > 5000:
         _sent_marks.clear()
 
+async def _renewal_tick():
+    now = datetime.now(timezone.utc)
+    today = now.date().isoformat()
+    matched = 0
+    async for u in db.users.find({"role": "client", "subscription_status": "active", "subscription_expires_at": {"$ne": None}}):
+        exp = u.get("subscription_expires_at")
+        try:
+            exp_dt = datetime.fromisoformat(exp)
+        except Exception:
+            continue
+        days_left = (exp_dt - now).days
+        if days_left in (3, 2, 1, 0):
+            matched += 1
+            mark = f"renew:{u['id']}:{today}"
+            if mark in _sent_marks:
+                continue
+            _sent_marks.add(mark)
+            if days_left <= 0:
+                body = "Tu suscripción vence hoy. Renueva con Yape/Plin para no perder acceso a tus recetas 💚"
+            elif days_left == 1:
+                body = "Tu suscripción vence mañana. Renueva a tiempo para seguir disfrutando 💚"
+            else:
+                body = f"Tu suscripción vence en {days_left} días. Renueva a tiempo para no perder acceso 💚"
+            await _push_to_user(u["id"], "Salud Nutrition", body, "/suscripcion", "renewal")
+    return matched
+
+@api_router.post("/admin/renewal-check")
+async def admin_renewal_check(admin: dict = Depends(require_admin)):
+    matched = await _renewal_tick()
+    return {"ok": True, "matched": matched}
+
 # ---------------- Files ----------------
 @api_router.get("/files/{path:path}")
 async def serve_file(path: str):
@@ -1026,6 +1057,7 @@ async def startup():
         await db.push_subscriptions.create_index("endpoint", unique=True)
         _init_vapid()
         scheduler.add_job(_reminder_tick, "interval", minutes=1, id="reminders", replace_existing=True)
+        scheduler.add_job(_renewal_tick, "cron", hour=15, minute=0, id="renewal", replace_existing=True)
         scheduler.start()
         logger.info("Reminder scheduler started")
     except Exception as e:
