@@ -323,14 +323,16 @@ function UsuariosTab() {
                 <td className="px-5 py-3 font-medium text-brand-ink">{u.name}</td>
                 <td className="px-5 py-3 text-brand-muted">{u.email}</td>
                 <td className="px-5 py-3">{u.role === "admin" ? <span className="text-xs px-2.5 py-1 rounded-full bg-brand-terracottaLight text-brand-terracotta">Admin</span> : <span className="text-xs text-brand-muted">Cliente</span>}</td>
-                <td className="px-5 py-3"><span className={`text-xs px-2.5 py-1 rounded-full ${u.subscription_status === "active" ? "bg-emerald-100 text-emerald-700" : u.subscription_status === "pending" ? "bg-amber-100 text-amber-700" : "bg-stone-100 text-stone-600"}`}>{u.subscription_status === "active" ? "Activa" : u.subscription_status === "pending" ? "Pendiente" : u.subscription_status === "expired" ? "Vencida" : "Inactiva"}</span></td>
+                <td className="px-5 py-3">
+                  <span className={`text-xs px-2.5 py-1 rounded-full ${u.subscription_status === "active" ? "bg-emerald-100 text-emerald-700" : u.subscription_status === "pending" ? "bg-amber-100 text-amber-700" : u.subscription_status === "expired" ? "bg-red-100 text-red-700" : "bg-stone-100 text-stone-600"}`}>{u.subscription_status === "active" ? "Activa" : u.subscription_status === "pending" ? "Pendiente" : u.subscription_status === "expired" ? "Vencida" : "Inactiva"}</span>
+                  {u.role !== "admin" && u.subscription_expires_at && <div className="text-xs text-brand-muted mt-1">Vence: {new Date(u.subscription_expires_at).toLocaleDateString("es-PE")}</div>}
+                </td>
                 <td className="px-5 py-3">
                   {u.role !== "admin" && (
                     <div className="flex justify-end gap-2">
-                      {u.subscription_status === "active" ? (
+                      <button onClick={() => grant(u.id)} data-testid={`admin-grant-${u.id}`} className="text-xs px-3 py-1.5 rounded-full bg-brand-green text-white hover:bg-brand-greenHover">{u.subscription_status === "active" ? "Renovar 30d" : "Activar 30d"}</button>
+                      {u.subscription_status === "active" && (
                         <button onClick={() => revoke(u.id)} data-testid={`admin-revoke-${u.id}`} className="text-xs px-3 py-1.5 rounded-full border border-brand-line hover:bg-brand-sand">Revocar</button>
-                      ) : (
-                        <button onClick={() => grant(u.id)} data-testid={`admin-grant-${u.id}`} className="text-xs px-3 py-1.5 rounded-full bg-brand-green text-white">Activar 30d</button>
                       )}
                       <button onClick={() => del(u.id)} data-testid={`admin-delete-user-${u.id}`} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600"><Trash2 className="w-4 h-4" /></button>
                     </div>
