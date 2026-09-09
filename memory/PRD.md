@@ -83,3 +83,8 @@ App de recetas saludables con cobro mensual (S/15). Recetas para diabéticos, ba
 - El usuario elige plan antes de subir comprobante; el plan se guarda en el pago (plan, plan_dias, monto).
 - Al aprobar (POST /admin/payments/{id}/approve), se otorgan los días del plan y, si la suscripción sigue activa, **los días se acumulan** desde la fecha de vencimiento actual (renovable). Admin puede override con ?days=N.
 - Admin ve el plan y monto en cada comprobante; historial del usuario muestra el plan. Verificado por curl: pago 3m → 90 días otorgados; UI móvil sin overflow.
+
+## Update (2026-06) — Importación PDF "Sopas Peruanas Saludables"
+- Importadas 15 sopas del PDF (Sabores Ancestrales) vía `/app/scripts/import_sopas.py`: título, descripción, ingredientes, TODOS los pasos de preparación, tiempo, porciones y nutrición estimada. Categorías: comida_saludable / bajar_peso / veganos.
+- Imágenes generadas con IA (Gemini Nano Banana): portada + imagen por paso de preparación. 14/15 recetas quedaron con TODAS las imágenes; 1 receta (Sopa de Verduras con Pollo) quedó con 5/6 pasos porque se agotó el presupuesto de la Universal Key (cost 16.00 > max 15.89).
+- Pendiente: cuando el usuario recargue saldo de la Universal Key, ejecutar `POST /api/admin/recipes/{id}/generate-steps` para completar la última imagen (o el botón de generar imágenes desde el Admin).
